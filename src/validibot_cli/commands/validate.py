@@ -468,14 +468,16 @@ def run(
         _display_run_result(final_run, verbose=verbose)
 
     # Exit with appropriate code
+    if not final_run.is_complete:
+        raise typer.Exit(3)
     if final_run.is_success:
         raise typer.Exit(0)
     elif final_run.result.value == "FAIL":
         raise typer.Exit(1)
-    elif final_run.result.value in ("ERROR", "TIMED_OUT"):
+    elif final_run.result.value in ("ERROR", "TIMED_OUT", "CANCELED", "UNKNOWN"):
         raise typer.Exit(2)
     else:
-        raise typer.Exit(0)
+        raise typer.Exit(2)
 
 
 @app.command(name="status")

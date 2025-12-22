@@ -204,8 +204,9 @@ The `validate` command returns meaningful exit codes for CI/CD integration:
 | Code | Meaning |
 |------|---------|
 | `0` | Validation passed |
-| `1` | Validation failed or error |
-| `2` | Validation error (distinct from failure) |
+| `1` | Validation failed (`FAIL`) or CLI/API error |
+| `2` | Validation error (`ERROR`/`TIMED_OUT`/`CANCELED`/`UNKNOWN`) |
+| `3` | Timed out waiting for completion (run still in progress) |
 | `130` | Interrupted (Ctrl+C) |
 
 ## CI/CD Integration

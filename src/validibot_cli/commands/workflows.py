@@ -107,7 +107,7 @@ def list_workflows(
 def show(
     workflow_id: Annotated[
         str,
-        typer.Argument(help="Workflow ID (UUID)"),
+        typer.Argument(help="Workflow ID or slug"),
     ],
     json_output: Annotated[
         bool,

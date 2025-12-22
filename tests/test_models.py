@@ -1,11 +1,13 @@
 """Tests for Pydantic API response models."""
 
-from validibot_cli.models import FindingSeverity
-from validibot_cli.models import StepStatus
-from validibot_cli.models import ValidationResult
-from validibot_cli.models import ValidationRun
-from validibot_cli.models import ValidationState
-from validibot_cli.models import ValidationStatus
+from validibot_cli.models import (
+    FindingSeverity,
+    StepStatus,
+    ValidationResult,
+    ValidationRun,
+    ValidationState,
+    ValidationStatus,
+)
 
 
 def test_validation_run_parses_state_and_result():
@@ -57,4 +59,3 @@ def test_validation_run_parses_state_and_result():
     assert step.warning_count == 0
     assert step.info_count == 0
     assert step.issues[0].severity == FindingSeverity.ERROR
-

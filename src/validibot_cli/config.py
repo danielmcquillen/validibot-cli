@@ -2,10 +2,11 @@
 Configuration management for Validibot CLI.
 
 Configuration is loaded from (in order of precedence):
-1. Command-line flags (--api-url, etc.)
-2. Environment variables (VALIDIBOT_API_URL, VALIDIBOT_TOKEN, etc.)
-3. Config file (~/.config/validibot/config.toml or platform-specific location)
-4. Defaults
+1. Environment variables (VALIDIBOT_API_URL, VALIDIBOT_TOKEN, etc.)
+2. Defaults
+
+Note: The CLI intentionally does not auto-load a `.env` file from the current working
+directory to avoid accidentally using credentials in untrusted repos.
 """
 
 from pathlib import Path
