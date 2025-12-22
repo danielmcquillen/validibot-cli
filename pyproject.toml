@@ -4,7 +4,8 @@ version = "0.1.0"
 description = "Command-line interface for Validibot - automated data validation"
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Validibot", email = "support@validibot.com" }]
+authors = [{ name = "Daniel McQuillen", email = "daniel@validibot.com" }]
+maintainers = [{ name = "Daniel McQuillen", email = "daniel@validibot.com" }]
 requires-python = ">=3.10"
 keywords = ["validation", "cli", "energyplus", "fmu", "building-simulation"]
 classifiers = [
@@ -45,8 +46,8 @@ validibot = "validibot_cli.main:app"
 [project.urls]
 Homepage = "https://validibot.com"
 Documentation = "https://docs.validibot.com"
-Repository = "https://github.com/validibot/validibot-cli"
-Issues = "https://github.com/validibot/validibot-cli/issues"
+Repository = "https://github.com/danielmcquillen/validibot-cli"
+Issues = "https://github.com/danielmcquillen/validibot-cli/issues"
 
 [build-system]
 requires = ["hatchling"]
