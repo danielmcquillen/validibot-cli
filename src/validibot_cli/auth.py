@@ -26,7 +26,6 @@ console = Console(stderr=True)
 # Keyring service name
 KEYRING_SERVICE = "validibot-cli"
 KEYRING_USERNAME = "api-token"
-DEFAULT_HOST_KEY = "validibot.com"
 
 # Fallback file for systems without keyring
 TOKEN_FILE_NAME = "credentials.json"
@@ -159,12 +158,6 @@ def get_stored_token(api_url: str | None = None) -> str | None:
             token = keyring.get_password(KEYRING_SERVICE, _keyring_username(host_key))
             if token:
                 return token
-
-            # Backwards compatibility: legacy key (assumed to be for the default host)
-            if host_key == DEFAULT_HOST_KEY:
-                token = keyring.get_password(KEYRING_SERVICE, KEYRING_USERNAME)
-                if token:
-                    return token
         except Exception:
             pass
 
@@ -178,12 +171,6 @@ def get_stored_token(api_url: str | None = None) -> str | None:
                 tokens = data.get("tokens")
                 if isinstance(tokens, dict):
                     token = tokens.get(host_key)
-                    if token:
-                        return str(token)
-
-                # Backwards compatibility: legacy key (assumed to be for the default host)
-                if host_key == DEFAULT_HOST_KEY:
-                    token = data.get("token")
                     if token:
                         return str(token)
         except Exception:
@@ -207,14 +194,6 @@ def delete_token(api_url: str | None = None) -> bool:
 
             keyring.delete_password(KEYRING_SERVICE, _keyring_username(host_key))
             deleted = True
-
-            # Backwards compatibility: legacy key (assumed to be for the default host)
-            if host_key == DEFAULT_HOST_KEY:
-                try:
-                    keyring.delete_password(KEYRING_SERVICE, KEYRING_USERNAME)
-                    deleted = True
-                except Exception:
-                    pass
         except Exception:
             pass
 
@@ -230,10 +209,6 @@ def delete_token(api_url: str | None = None) -> bool:
 
             if host_key in updated_tokens:
                 updated_tokens.pop(host_key, None)
-                file_changed = True
-
-            # Backwards compatibility: legacy key (assumed to be for the default host)
-            if isinstance(data, dict) and host_key == DEFAULT_HOST_KEY and "token" in data:
                 file_changed = True
 
             if file_changed:

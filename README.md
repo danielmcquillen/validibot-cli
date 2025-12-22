@@ -93,7 +93,7 @@ Tokens are stored per API host (based on `VALIDIBOT_API_URL`).
 ```bash
 validibot workflows list          # List all available workflows
 validibot workflows list --json   # Output as JSON
-validibot workflows show <id>     # Show details of a specific workflow
+validibot workflows show <workflow-id-or-slug>  # Show details of a specific workflow
 ```
 
 ### Runs
@@ -109,10 +109,10 @@ validibot runs show <run-id> --json # Output as JSON
 
 ```bash
 # Run a validation (waits for completion by default)
-validibot validate model.idf -w <workflow-id>
+validibot validate model.idf -w <workflow-id-or-slug>
 
 # Run without waiting (returns immediately with run ID)
-validibot validate model.idf -w <workflow-id> --no-wait
+validibot validate model.idf -w <workflow-id-or-slug> --no-wait
 
 # Check status of a validation run
 validibot runs show <run-id>
@@ -149,16 +149,16 @@ If the workflow slug is ambiguous, the CLI will display the matching workflows a
 
 ```bash
 # Verbose output (shows individual step results)
-validibot validate model.idf -w <workflow-id> --verbose
+validibot validate model.idf -w <workflow-id-or-slug> --verbose
 
 # JSON output (for scripting/CI)
-validibot validate model.idf -w <workflow-id> --json
+validibot validate model.idf -w <workflow-id-or-slug> --json
 
 # Custom timeout (default: 600 seconds)
-validibot validate model.idf -w <workflow-id> --timeout 300
+validibot validate model.idf -w <workflow-id-or-slug> --timeout 300
 
 # Name your validation run
-validibot validate model.idf -w <workflow-id> --name "nightly-build-check"
+validibot validate model.idf -w <workflow-id-or-slug> --name "nightly-build-check"
 ```
 
 #### Full Option Reference
