@@ -7,6 +7,9 @@
 
 A command-line interface for [Validibot](https://validibot.com) - your automated data validation assistant.
 
+What's Validibot CLI? Validibot CLI is a small library that provides a command line access to Validibot.
+What's Validibot? So happy you asked! Read more here >> [https://validibot.com ](https://validibot.com)
+
 ## Features
 
 - **Run validations** from the command line or CI/CD pipelines
@@ -86,6 +89,7 @@ validibot auth status        # Check if authenticated (no API call)
 **Credential storage:**
 
 The CLI uses your system's secure credential storage:
+
 - **macOS**: Keychain
 - **Windows**: Credential Manager
 - **Linux**: Secret Service (GNOME Keyring, KWallet, etc.)
@@ -168,30 +172,30 @@ validibot validate model.idf -w <workflow-id-or-slug> --name "nightly-build-chec
 
 #### Full Option Reference
 
-| Option | Short | Description |
-|--------|-------|-------------|
-| `--workflow` | `-w` | Workflow ID or slug (required) |
-| `--org` | `-o` | Organization slug for disambiguation |
-| `--project` | `-p` | Project slug for filtering |
-| `--version` | | Workflow version for disambiguation |
-| `--name` | `-n` | Name for this validation run |
-| `--wait/--no-wait` | | Wait for completion (default: wait) |
-| `--timeout` | `-t` | Max wait time in seconds (default: 600) |
-| `--verbose` | `-v` | Show detailed step-by-step output |
-| `--json` | `-j` | Output results as JSON |
+| Option             | Short | Description                             |
+| ------------------ | ----- | --------------------------------------- |
+| `--workflow`       | `-w`  | Workflow ID or slug (required)          |
+| `--org`            | `-o`  | Organization slug for disambiguation    |
+| `--project`        | `-p`  | Project slug for filtering              |
+| `--version`        |       | Workflow version for disambiguation     |
+| `--name`           | `-n`  | Name for this validation run            |
+| `--wait/--no-wait` |       | Wait for completion (default: wait)     |
+| `--timeout`        | `-t`  | Max wait time in seconds (default: 600) |
+| `--verbose`        | `-v`  | Show detailed step-by-step output       |
+| `--json`           | `-j`  | Output results as JSON                  |
 
 ## Configuration
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `VALIDIBOT_API_URL` | API base URL | `https://validibot.com` |
-| `VALIDIBOT_TOKEN` | API key (alternative to `validibot login`) | - |
-| `VALIDIBOT_TIMEOUT` | Request timeout in seconds | `300` |
-| `VALIDIBOT_POLL_INTERVAL` | Status polling interval in seconds | `5` |
-| `VALIDIBOT_NO_KEYRING` | Disable keyring, use file storage | `false` |
-| `VALIDIBOT_ALLOW_INSECURE_API_URL` | Allow non-HTTPS API base URL (dangerous) | `false` |
+| Variable                           | Description                                | Default                 |
+| ---------------------------------- | ------------------------------------------ | ----------------------- |
+| `VALIDIBOT_API_URL`                | API base URL                               | `https://validibot.com` |
+| `VALIDIBOT_TOKEN`                  | API key (alternative to `validibot login`) | -                       |
+| `VALIDIBOT_TIMEOUT`                | Request timeout in seconds                 | `300`                   |
+| `VALIDIBOT_POLL_INTERVAL`          | Status polling interval in seconds         | `5`                     |
+| `VALIDIBOT_NO_KEYRING`             | Disable keyring, use file storage          | `false`                 |
+| `VALIDIBOT_ALLOW_INSECURE_API_URL` | Allow non-HTTPS API base URL (dangerous)   | `false`                 |
 
 ### Using Environment Variables for CI/CD
 
@@ -206,13 +210,13 @@ validibot validate model.idf -w my-workflow
 
 The `validate` command returns meaningful exit codes for CI/CD integration:
 
-| Code | Meaning |
-|------|---------|
-| `0` | Validation passed |
-| `1` | Validation failed (`FAIL`) or CLI/API error |
-| `2` | Validation error (`ERROR`/`TIMED_OUT`/`CANCELED`/`UNKNOWN`) |
-| `3` | Timed out waiting for completion (run still in progress) |
-| `130` | Interrupted (Ctrl+C) |
+| Code  | Meaning                                                     |
+| ----- | ----------------------------------------------------------- |
+| `0`   | Validation passed                                           |
+| `1`   | Validation failed (`FAIL`) or CLI/API error                 |
+| `2`   | Validation error (`ERROR`/`TIMED_OUT`/`CANCELED`/`UNKNOWN`) |
+| `3`   | Timed out waiting for completion (run still in progress)    |
+| `130` | Interrupted (Ctrl+C)                                        |
 
 ## CI/CD Integration
 
@@ -232,7 +236,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: "3.12"
 
       - name: Install Validibot CLI
         run: pip install validibot-cli
@@ -260,7 +264,7 @@ validate:
 ```yaml
 - task: UsePythonVersion@0
   inputs:
-    versionSpec: '3.12'
+    versionSpec: "3.12"
 
 - script: |
     pip install validibot-cli
@@ -295,7 +299,6 @@ uv run ruff format .
 # Type checking
 uv run mypy src/
 ```
-
 
 ## License
 
