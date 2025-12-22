@@ -296,9 +296,6 @@ uv run ruff format .
 uv run mypy src/
 ```
 
-### VS Code
-
-The project includes VS Code launch configurations for debugging. Open the Run and Debug panel and select a configuration like "validibot login" to debug interactively.
 
 ## License
 
