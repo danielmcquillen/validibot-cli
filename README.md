@@ -5,7 +5,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/validibot-cli.svg)](https://pypi.org/project/validibot-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A command-line interface for [Validibot](https://validibot.com) - automated data validation for building simulation files.
+A command-line interface for [Validibot](https://validibot.com) - your automated data validation assistant.
 
 ## Features
 
