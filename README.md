@@ -1,6 +1,6 @@
 # Validibot CLI
 
-A command-line interface for [Validibot](https://validibot.com) - automated data validation for building simulation files (EnergyPlus IDF, FMU, and more).
+A command-line interface for [Validibot](https://validibot.com) - your automated data validation assistant.
 
 ## Features
 
