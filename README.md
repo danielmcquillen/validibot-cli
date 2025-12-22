@@ -1,6 +1,11 @@
 # Validibot CLI
 
-A command-line interface for [Validibot](https://validibot.com) - your automated data validation assistant.
+[![CI](https://github.com/danielmcquillen/validibot-cli/workflows/CI/badge.svg)](https://github.com/danielmcquillen/validibot-cli/actions)
+[![PyPI version](https://badge.fury.io/py/validibot-cli.svg)](https://pypi.org/project/validibot-cli/)
+[![Python versions](https://img.shields.io/pypi/pyversions/validibot-cli.svg)](https://pypi.org/project/validibot-cli/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
+A command-line interface for [Validibot](https://validibot.com) - automated data validation for building simulation files.
 
 ## Features
 
