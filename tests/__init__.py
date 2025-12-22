@@ -1,0 +1,1 @@
+"""Validibot CLI tests."""
