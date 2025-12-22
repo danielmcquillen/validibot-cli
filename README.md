@@ -86,6 +86,7 @@ The CLI uses your system's secure credential storage:
 - **Linux**: Secret Service (GNOME Keyring, KWallet, etc.)
 
 If the system keyring is unavailable, credentials fall back to `~/.config/validibot/credentials.json` with restrictive file permissions (owner read/write only).
+Tokens are stored per API host (based on `VALIDIBOT_API_URL`).
 
 ### Workflows
 
@@ -93,6 +94,13 @@ If the system keyring is unavailable, credentials fall back to `~/.config/validi
 validibot workflows list          # List all available workflows
 validibot workflows list --json   # Output as JSON
 validibot workflows show <id>     # Show details of a specific workflow
+```
+
+### Runs
+
+```bash
+validibot runs show <run-id>        # Show run status and results
+validibot runs show <run-id> --json # Output as JSON
 ```
 
 ### Validation
@@ -107,7 +115,7 @@ validibot validate model.idf -w <workflow-id>
 validibot validate model.idf -w <workflow-id> --no-wait
 
 # Check status of a validation run
-validibot validate status <run-id>
+validibot runs show <run-id>
 ```
 
 #### Workflow Selection
@@ -178,6 +186,7 @@ validibot validate model.idf -w <workflow-id> --name "nightly-build-check"
 | `VALIDIBOT_TIMEOUT` | Request timeout in seconds | `300` |
 | `VALIDIBOT_POLL_INTERVAL` | Status polling interval in seconds | `5` |
 | `VALIDIBOT_NO_KEYRING` | Disable keyring, use file storage | `false` |
+| `VALIDIBOT_ALLOW_INSECURE_API_URL` | Allow non-HTTPS API base URL (dangerous) | `false` |
 
 ### Using Environment Variables for CI/CD
 
