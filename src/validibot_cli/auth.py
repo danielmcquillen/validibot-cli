@@ -132,7 +132,10 @@ def save_token(token: str, api_url: str | None = None) -> None:
         tokens = {str(k): str(v) for k, v in raw_tokens.items() if v is not None}
 
     tokens[host_key] = token
-    _write_token_file(token_file, {"tokens": tokens})
+
+    # Preserve existing default_orgs
+    default_orgs = data.get("default_orgs", {})
+    _write_token_file(token_file, {"tokens": tokens, "default_orgs": default_orgs})
 
 
 def get_stored_token(api_url: str | None = None) -> str | None:

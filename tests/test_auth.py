@@ -6,8 +6,11 @@ from unittest.mock import patch
 import pytest
 
 from validibot_cli.auth import (
+    delete_default_org,
     delete_token,
+    get_default_org,
     get_stored_token,
+    save_default_org,
     save_token,
 )
 
@@ -92,3 +95,63 @@ class TestEnvironmentToken:
             # Environment token should be returned
             token = get_stored_token(api_url="https://validibot.com")
             assert token == "env_token_abc"
+
+
+class TestDefaultOrgStorage:
+    """Tests for default organization storage."""
+
+    def test_save_and_retrieve_default_org(self, temp_config_dir, no_env_token):
+        """Test saving and retrieving a default org."""
+        test_org = "my-test-org"
+
+        save_default_org(test_org, api_url="https://validibot.com")
+        retrieved = get_default_org(api_url="https://validibot.com")
+
+        assert retrieved == test_org
+
+    def test_delete_default_org(self, temp_config_dir, no_env_token):
+        """Test deleting a stored default org."""
+        test_org = "my-test-org"
+
+        save_default_org(test_org, api_url="https://validibot.com")
+        assert get_default_org(api_url="https://validibot.com") == test_org
+
+        deleted = delete_default_org(api_url="https://validibot.com")
+        assert deleted is True
+        assert get_default_org(api_url="https://validibot.com") is None
+
+    def test_delete_nonexistent_default_org(self, temp_config_dir, no_env_token):
+        """Test deleting when no default org exists."""
+        deleted = delete_default_org(api_url="https://validibot.com")
+        assert deleted is False
+
+    def test_env_org_takes_precedence(self, temp_config_dir, no_env_token):
+        """Test that environment variable org is used first."""
+        # Save a default org to file first
+        save_default_org("file-org", api_url="https://validibot.com")
+
+        # Now set env var
+        with patch.dict(os.environ, {"VALIDIBOT_ORG": "env-org"}):
+            # Environment org should be returned
+            org = get_default_org(api_url="https://validibot.com")
+            assert org == "env-org"
+
+    def test_default_org_scoped_by_host(self, temp_config_dir, no_env_token):
+        """Test that default orgs are scoped by API host."""
+        save_default_org("org-prod", api_url="https://validibot.com")
+        save_default_org("org-staging", api_url="https://staging.validibot.com")
+
+        assert get_default_org(api_url="https://validibot.com") == "org-prod"
+        assert get_default_org(api_url="https://staging.validibot.com") == "org-staging"
+
+    def test_default_org_persists_with_token(self, temp_config_dir, no_env_token):
+        """Test that default org is preserved when saving tokens."""
+        # Save a default org first
+        save_default_org("my-org", api_url="https://validibot.com")
+
+        # Now save a token
+        save_token("test_token", api_url="https://validibot.com")
+
+        # Default org should still be there
+        assert get_default_org(api_url="https://validibot.com") == "my-org"
+        assert get_stored_token(api_url="https://validibot.com") == "test_token"
