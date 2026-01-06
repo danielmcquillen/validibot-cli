@@ -152,8 +152,9 @@ def login(
                             )
                     except ValueError:
                         err_console.print("Please enter a valid number", style="yellow")
-        except Exception:
-            # Don't fail login if org fetch fails
+        except Exception as e:
+            # Don't fail login if org fetch fails, but show the error for debugging
+            err_console.print(f"Warning: Could not fetch orgs: {e}", style="yellow", markup=False)
             org_message = "\n[dim]Default org:[/dim] could not be determined"
 
     # Success message

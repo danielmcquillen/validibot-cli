@@ -92,7 +92,7 @@ class User(BaseModel):
 class Organization(BaseModel):
     """An organization the user belongs to."""
 
-    id: StrId
+    id: OptionalStrId = None
     slug: str
     name: str = ""
 
