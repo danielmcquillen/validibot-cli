@@ -155,3 +155,18 @@ class TestDefaultOrgStorage:
         # Default org should still be there
         assert get_default_org(api_url="https://validibot.com") == "my-org"
         assert get_stored_token(api_url="https://validibot.com") == "test_token"
+
+    def test_default_org_persists_after_token_delete(self, temp_config_dir, no_env_token):
+        """Test that default org is preserved when deleting tokens."""
+        # Save both a token and default org
+        save_token("test_token", api_url="https://validibot.com")
+        save_default_org("my-org", api_url="https://validibot.com")
+
+        # Delete the token
+        deleted = delete_token(api_url="https://validibot.com")
+        assert deleted is True
+
+        # Default org should still be there
+        assert get_default_org(api_url="https://validibot.com") == "my-org"
+        # But token should be gone
+        assert get_stored_token(api_url="https://validibot.com") is None

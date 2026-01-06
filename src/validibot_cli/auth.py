@@ -215,8 +215,12 @@ def delete_token(api_url: str | None = None) -> bool:
                 file_changed = True
 
             if file_changed:
-                if updated_tokens:
-                    _write_token_file(token_file, {"tokens": updated_tokens})
+                # Preserve default_orgs when rewriting
+                default_orgs = data.get("default_orgs", {})
+                if updated_tokens or default_orgs:
+                    _write_token_file(
+                        token_file, {"tokens": updated_tokens, "default_orgs": default_orgs}
+                    )
                 else:
                     token_file.unlink()
                 deleted = True
