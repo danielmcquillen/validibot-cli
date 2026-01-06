@@ -14,6 +14,7 @@ from rich.markup import escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
+from validibot_cli.auth import get_default_org
 from validibot_cli.client import (
     AmbiguousWorkflowError,
     APIError,
@@ -26,6 +27,38 @@ from validibot_cli.models import (
     FindingSeverity,
     ValidationRun,
 )
+
+
+def _resolve_org(org: str | None) -> str:
+    """Resolve the organization, using default if not provided.
+
+    Args:
+        org: Org slug from command line, or None.
+
+    Returns:
+        The resolved org slug.
+
+    Raises:
+        typer.Exit: If no org is provided and no default is set.
+    """
+    if org:
+        return org
+
+    default_org = get_default_org()
+    if default_org:
+        return default_org
+
+    err_console.print(
+        "Error: --org is required (no default org set)",
+        style="red",
+        markup=False,
+    )
+    err_console.print(
+        "Run 'validibot login' to set a default org, or use --org",
+        style="dim",
+        markup=False,
+    )
+    raise typer.Exit(1)
 
 app = typer.Typer()
 console = Console()
@@ -287,13 +320,13 @@ def run(
         ),
     ],
     org: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--org",
             "-o",
-            help="Organization slug (required)",
+            help="Organization slug (uses default if set)",
         ),
-    ],
+    ] = None,
     project: Annotated[
         str | None,
         typer.Option(
@@ -365,6 +398,9 @@ def run(
         validibot validate run model.idf -w my-workflow -o my-org -p my-project
         validibot validate run model.fmu -w my-workflow -o my-org --no-wait
     """
+    # Resolve org (use default if not provided)
+    resolved_org = _resolve_org(org)
+
     # Validate file exists and is readable
     if not file.is_file():
         err_console.print(f"Error: Not a file: {file}", style="red", markup=False)
@@ -383,7 +419,7 @@ def run(
         run_data = client.start_validation(
             workflow_id=workflow,
             file_path=file,
-            org=org,
+            org=resolved_org,
             name=name,
             project=project,
             version=version,
@@ -429,7 +465,7 @@ def run(
             console.print()
             console.print(f"Run ID: {run_id}", style="dim", markup=False)
             console.print(
-                f"Check status with: validibot validate status {run_id} --org {org}",
+                f"Check status with: validibot validate status {run_id} --org {resolved_org}",
                 style="dim",
                 markup=False,
             )
@@ -443,7 +479,7 @@ def run(
         final_run = _wait_for_completion(
             client,
             run_id,
-            org=org,
+            org=resolved_org,
             poll_interval=poll_interval,
             timeout=timeout,
             show_progress=not json_output,
@@ -487,13 +523,13 @@ def status(
         typer.Argument(help="Validation run ID"),
     ],
     org: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--org",
             "-o",
-            help="Organization slug (required)",
+            help="Organization slug (uses default if set)",
         ),
-    ],
+    ] = None,
     json_output: Annotated[
         bool,
         typer.Option(
@@ -519,9 +555,12 @@ def status(
         validibot validate status abc123 --org my-org
         validibot validate status abc123 -o my-org --json
     """
+    # Resolve org (use default if not provided)
+    resolved_org = _resolve_org(org)
+
     try:
         client = get_client()
-        run_data = client.get_validation_run(run_id, org=org)
+        run_data = client.get_validation_run(run_id, org=resolved_org)
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None

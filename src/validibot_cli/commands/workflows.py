@@ -11,7 +11,30 @@ from rich.console import Console
 from rich.markup import escape
 from rich.table import Table
 
+from validibot_cli.auth import get_default_org
 from validibot_cli.client import APIError, AuthenticationError, get_client
+
+
+def _resolve_org(org: str | None) -> str:
+    """Resolve the organization, using default if not provided."""
+    if org:
+        return org
+
+    default_org = get_default_org()
+    if default_org:
+        return default_org
+
+    err_console.print(
+        "Error: --org is required (no default org set)",
+        style="red",
+        markup=False,
+    )
+    err_console.print(
+        "Run 'validibot login' to set a default org, or use --org",
+        style="dim",
+        markup=False,
+    )
+    raise typer.Exit(1)
 
 app = typer.Typer(no_args_is_help=True)
 console = Console()
@@ -33,13 +56,13 @@ def _sanitize(text: str) -> str:
 @app.command(name="list")
 def list_workflows(
     org: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--org",
             "-o",
-            help="Organization slug (required)",
+            help="Organization slug (uses default if set)",
         ),
-    ],
+    ] = None,
     json_output: Annotated[
         bool,
         typer.Option(
@@ -60,9 +83,12 @@ def list_workflows(
         validibot workflows list --org my-org
         validibot workflows list -o my-org --json
     """
+    # Resolve org (use default if not provided)
+    resolved_org = _resolve_org(org)
+
     try:
         client = get_client()
-        workflows = client.list_workflows(org=org)
+        workflows = client.list_workflows(org=resolved_org)
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None
@@ -87,7 +113,7 @@ def list_workflows(
         return
 
     # Display as table
-    table = Table(title=f"Workflows in '{org}'", show_header=True)
+    table = Table(title=f"Workflows in '{resolved_org}'", show_header=True)
     table.add_column("Slug", style="cyan", no_wrap=True)
     table.add_column("ID", style="dim", no_wrap=True)
     table.add_column("Ver", style="dim", no_wrap=True, justify="center")
@@ -126,13 +152,13 @@ def show(
         typer.Argument(help="Workflow ID or slug"),
     ],
     org: Annotated[
-        str,
+        str | None,
         typer.Option(
             "--org",
             "-o",
-            help="Organization slug (required)",
+            help="Organization slug (uses default if set)",
         ),
-    ],
+    ] = None,
     json_output: Annotated[
         bool,
         typer.Option(
@@ -150,9 +176,12 @@ def show(
         validibot workflows show my-workflow --org my-org
         validibot workflows show 123 -o my-org --json
     """
+    # Resolve org (use default if not provided)
+    resolved_org = _resolve_org(org)
+
     try:
         client = get_client()
-        workflow = client.get_workflow(workflow_id, org=org)
+        workflow = client.get_workflow(workflow_id, org=resolved_org)
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None

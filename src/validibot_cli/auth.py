@@ -228,6 +228,94 @@ def is_authenticated() -> bool:
     return get_stored_token() is not None
 
 
+def save_default_org(org_slug: str, api_url: str | None = None) -> None:
+    """Save the default organization for a given API host.
+
+    Args:
+        org_slug: The organization slug to save as default.
+        api_url: API URL to scope the default org to.
+    """
+    host_key = _get_host_key(api_url)
+    token_file = _get_token_file()
+    data = _load_token_file(token_file)
+
+    default_orgs: dict[str, str] = {}
+    raw_orgs = data.get("default_orgs")
+    if isinstance(raw_orgs, dict):
+        default_orgs = {str(k): str(v) for k, v in raw_orgs.items() if v is not None}
+
+    default_orgs[host_key] = org_slug
+
+    # Preserve existing tokens
+    tokens = data.get("tokens", {})
+    _write_token_file(token_file, {"tokens": tokens, "default_orgs": default_orgs})
+
+
+def get_default_org(api_url: str | None = None) -> str | None:
+    """Get the default organization for a given API host.
+
+    Checks in order:
+    1. Environment variable (VALIDIBOT_ORG)
+    2. Stored default org
+
+    Args:
+        api_url: API URL to look up the default org for.
+
+    Returns:
+        The default org slug, or None if not set.
+    """
+    import os
+
+    # Check environment variable first
+    env_org = os.environ.get("VALIDIBOT_ORG")
+    if env_org:
+        return env_org
+
+    host_key = _get_host_key(api_url)
+    token_file = _get_token_file()
+
+    if token_file.exists():
+        try:
+            data = _load_token_file(token_file)
+            if isinstance(data, dict):
+                default_orgs = data.get("default_orgs")
+                if isinstance(default_orgs, dict):
+                    org = default_orgs.get(host_key)
+                    if org:
+                        return str(org)
+        except Exception:
+            pass
+
+    return None
+
+
+def delete_default_org(api_url: str | None = None) -> bool:
+    """Delete the stored default organization.
+
+    Returns True if a default org was deleted, False if none was stored.
+    """
+    host_key = _get_host_key(api_url)
+    token_file = _get_token_file()
+
+    if not token_file.exists():
+        return False
+
+    try:
+        data = _load_token_file(token_file)
+        default_orgs = data.get("default_orgs") if isinstance(data, dict) else None
+        updated_orgs = dict(default_orgs) if isinstance(default_orgs, dict) else {}
+
+        if host_key not in updated_orgs:
+            return False
+
+        updated_orgs.pop(host_key, None)
+        tokens = data.get("tokens", {})
+        _write_token_file(token_file, {"tokens": tokens, "default_orgs": updated_orgs})
+        return True
+    except Exception:
+        return False
+
+
 def get_token_storage_location() -> str:
     """Get a human-readable description of where tokens are stored."""
     if _use_keyring():

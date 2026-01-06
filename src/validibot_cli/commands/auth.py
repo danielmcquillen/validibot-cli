@@ -13,9 +13,11 @@ from rich.panel import Panel
 
 from validibot_cli.auth import (
     delete_token,
+    get_default_org,
     get_stored_token,
     get_token_storage_location,
     is_authenticated,
+    save_default_org,
     save_token,
 )
 from validibot_cli.client import AuthenticationError, ValidibotClient, get_client
@@ -109,6 +111,51 @@ def login(
         )
         raise typer.Exit(1) from None
 
+    # Fetch user's organizations and set default if applicable
+    org_message = ""
+    if verify:
+        try:
+            orgs = client.list_user_orgs()
+            if len(orgs) == 1:
+                # Single org - set as default automatically
+                save_default_org(orgs[0].slug)
+                org_message = f"\n[dim]Default org:[/dim] {escape(orgs[0].slug)}"
+            elif len(orgs) > 1:
+                # Multiple orgs - prompt user to select
+                console.print()
+                console.print("You belong to multiple organizations:")
+                for i, org in enumerate(orgs, 1):
+                    org_display = org.name or org.slug
+                    console.print(f"  {i}. {escape(org_display)} ({escape(org.slug)})")
+                console.print()
+
+                # Prompt for selection
+                while True:
+                    choice = typer.prompt(
+                        "Select default org (enter number, or press Enter to skip)",
+                        default="",
+                        show_default=False,
+                    )
+                    if not choice:
+                        org_message = "\n[dim]Default org:[/dim] not set (use --org)"
+                        break
+                    try:
+                        idx = int(choice) - 1
+                        if 0 <= idx < len(orgs):
+                            save_default_org(orgs[idx].slug)
+                            org_message = f"\n[dim]Default org:[/dim] {escape(orgs[idx].slug)}"
+                            break
+                        else:
+                            err_console.print(
+                                f"Please enter a number between 1 and {len(orgs)}",
+                                style="yellow",
+                            )
+                    except ValueError:
+                        err_console.print("Please enter a valid number", style="yellow")
+        except Exception:
+            # Don't fail login if org fetch fails
+            org_message = "\n[dim]Default org:[/dim] could not be determined"
+
     # Success message
     console.print()
     if verify:
@@ -118,7 +165,8 @@ def login(
                 f"[green]Logged in as [bold]{escape(display_name)}[/bold][/green]\n\n"
                 f"[dim]Email:[/dim] {escape(email)}\n"
                 f"[dim]API Key:[/dim] {escape(_mask_key(token))}\n"
-                f"[dim]Stored in:[/dim] {escape(get_token_storage_location())}",
+                f"[dim]Stored in:[/dim] {escape(get_token_storage_location())}"
+                f"{org_message}",
                 title="Authentication successful",
                 border_style="green",
             )
@@ -184,6 +232,7 @@ def whoami() -> None:
 
     token = get_stored_token()
     key_display = _mask_key(token) if token else "none"
+    default_org = get_default_org()
 
     console.print()
     console.print(
@@ -192,7 +241,8 @@ def whoami() -> None:
             + (f"[dim]Username:[/dim] {escape(username)}\n" if username else "")
             + f"[dim]Email:[/dim] {escape(email)}\n"
             f"[dim]API Key:[/dim] {escape(key_display)}\n"
-            f"[dim]API:[/dim] {escape(get_api_url())}",
+            f"[dim]API:[/dim] {escape(get_api_url())}\n"
+            f"[dim]Default org:[/dim] {escape(default_org) if default_org else 'not set'}",
             title="Current User",
             border_style="blue",
         )

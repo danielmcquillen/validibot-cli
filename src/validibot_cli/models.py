@@ -89,6 +89,14 @@ class User(BaseModel):
     username: str = ""
 
 
+class Organization(BaseModel):
+    """An organization the user belongs to."""
+
+    id: StrId
+    slug: str
+    name: str = ""
+
+
 class WorkflowStep(BaseModel):
     """A step within a workflow."""
 

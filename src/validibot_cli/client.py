@@ -13,7 +13,7 @@ import httpx
 from validibot_cli import __version__
 from validibot_cli.auth import get_stored_token
 from validibot_cli.config import get_api_url, get_timeout, normalize_api_url
-from validibot_cli.models import User, ValidationRun, Workflow
+from validibot_cli.models import Organization, User, ValidationRun, Workflow
 
 
 class APIError(Exception):
@@ -260,6 +260,20 @@ class ValidibotClient:
         """
         data = self.get("/api/v1/auth/me/")
         return User.model_validate(data)
+
+    def list_user_orgs(self) -> list[Organization]:
+        """List organizations the current user belongs to.
+
+        Returns:
+            List of organizations.
+        """
+        response = self.get("/api/v1/orgs/")
+        # Handle paginated response
+        if isinstance(response, dict) and "results" in response:
+            items = response["results"]
+        else:
+            items = response
+        return [Organization.model_validate(org) for org in items]
 
     def list_workflows(self, org: str) -> list[Workflow]:
         """List available workflows for an organization.
