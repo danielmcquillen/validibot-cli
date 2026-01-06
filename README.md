@@ -84,7 +84,10 @@ validibot auth status        # Check if authenticated (no API call)
 1. Prompts for your API key (input is hidden for security)
 2. Validates the key against the Validibot API
 3. Stores the key securely in your system keyring
-4. Displays your account info to confirm success
+4. Fetches your organizations and sets a default:
+   - If you belong to one org, it becomes your default automatically
+   - If you belong to multiple orgs, you'll be prompted to select one (or skip)
+5. Displays your account info to confirm success
 
 **Credential storage:**
 
@@ -175,7 +178,7 @@ validibot validate model.idf -w <workflow-id-or-slug> --name "nightly-build-chec
 | Option             | Short | Description                             |
 | ------------------ | ----- | --------------------------------------- |
 | `--workflow`       | `-w`  | Workflow ID or slug (required)          |
-| `--org`            | `-o`  | Organization slug for disambiguation    |
+| `--org`            | `-o`  | Organization slug (uses default if set) |
 | `--project`        | `-p`  | Project slug for filtering              |
 | `--version`        |       | Workflow version for disambiguation     |
 | `--name`           | `-n`  | Name for this validation run            |
@@ -192,6 +195,7 @@ validibot validate model.idf -w <workflow-id-or-slug> --name "nightly-build-chec
 | ---------------------------------- | ------------------------------------------ | ----------------------- |
 | `VALIDIBOT_API_URL`                | API base URL                               | `https://validibot.com` |
 | `VALIDIBOT_TOKEN`                  | API key (alternative to `validibot login`) | -                       |
+| `VALIDIBOT_ORG`                    | Default organization slug                  | -                       |
 | `VALIDIBOT_TIMEOUT`                | Request timeout in seconds                 | `300`                   |
 | `VALIDIBOT_POLL_INTERVAL`          | Status polling interval in seconds         | `5`                     |
 | `VALIDIBOT_NO_KEYRING`             | Disable keyring, use file storage          | `false`                 |
@@ -203,8 +207,18 @@ Instead of running `validibot login`, you can set `VALIDIBOT_TOKEN` directly:
 
 ```bash
 export VALIDIBOT_TOKEN="your-api-key"
+export VALIDIBOT_ORG="my-org"
 validibot validate model.idf -w my-workflow
 ```
+
+### Organization Resolution
+
+When `--org` is not explicitly provided, the CLI resolves the organization in this order:
+
+1. `--org` flag (if provided)
+2. `VALIDIBOT_ORG` environment variable
+3. Default org saved during `validibot login`
+4. Error with a helpful message
 
 ## Exit Codes
 
