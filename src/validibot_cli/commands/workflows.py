@@ -18,7 +18,7 @@ console = Console()
 err_console = Console(stderr=True)
 
 # Maximum length for description in table view
-MAX_DESCRIPTION_LENGTH = 60
+MAX_DESCRIPTION_LENGTH = 50
 
 
 def _sanitize(text: str) -> str:
@@ -32,6 +32,14 @@ def _sanitize(text: str) -> str:
 
 @app.command(name="list")
 def list_workflows(
+    org: Annotated[
+        str,
+        typer.Option(
+            "--org",
+            "-o",
+            help="Organization slug (required)",
+        ),
+    ],
     json_output: Annotated[
         bool,
         typer.Option(
@@ -42,14 +50,19 @@ def list_workflows(
     ] = False,
 ) -> None:
     """
-    List available workflows.
+    List available workflows in an organization.
 
-    Shows all workflows you have access to, including their IDs
-    and descriptions.
+    Shows all workflows you have access to in the specified org,
+    including their IDs, slugs, and descriptions.
+
+    [bold]Examples:[/bold]
+
+        validibot workflows list --org my-org
+        validibot workflows list -o my-org --json
     """
     try:
         client = get_client()
-        workflows = client.list_workflows()
+        workflows = client.list_workflows(org=org)
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None
@@ -74,8 +87,9 @@ def list_workflows(
         return
 
     # Display as table
-    table = Table(title="Available Workflows", show_header=True)
+    table = Table(title=f"Workflows in '{org}'", show_header=True)
     table.add_column("Slug", style="cyan", no_wrap=True)
+    table.add_column("ID", style="dim", no_wrap=True)
     table.add_column("Ver", style="dim", no_wrap=True, justify="center")
     table.add_column("Name", style="bold")
     table.add_column("Description")
@@ -91,6 +105,7 @@ def list_workflows(
             desc = desc[:MAX_DESCRIPTION_LENGTH] + "..."
         table.add_row(
             slug,
+            str(wf.id),
             str(wf.version) if wf.version is not None else "-",
             name,
             desc,
@@ -101,6 +116,7 @@ def list_workflows(
     console.print(table)
     console.print()
     console.print(f"[dim]Found {len(workflows)} workflow(s)[/dim]")
+    console.print("[dim]Use slug or ID with 'validibot workflows show' or 'validibot validate run'[/dim]")
 
 
 @app.command()
@@ -108,6 +124,14 @@ def show(
     workflow_id: Annotated[
         str,
         typer.Argument(help="Workflow ID or slug"),
+    ],
+    org: Annotated[
+        str,
+        typer.Option(
+            "--org",
+            "-o",
+            help="Organization slug (required)",
+        ),
     ],
     json_output: Annotated[
         bool,
@@ -120,10 +144,15 @@ def show(
 ) -> None:
     """
     Show details of a specific workflow.
+
+    [bold]Examples:[/bold]
+
+        validibot workflows show my-workflow --org my-org
+        validibot workflows show 123 -o my-org --json
     """
     try:
         client = get_client()
-        workflow = client.get_workflow(workflow_id)
+        workflow = client.get_workflow(workflow_id, org=org)
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None
@@ -155,9 +184,11 @@ def show(
     console.print()
     if workflow.slug:
         console.print(f"[dim]Slug:[/dim] {_sanitize(workflow.slug)}")
+    console.print(f"[dim]ID:[/dim] {workflow.id}")
     if workflow.version is not None:
         console.print(f"[dim]Version:[/dim] {workflow.version}")
-    console.print(f"[dim]ID:[/dim] {workflow.id}")
+    if workflow.org_slug:
+        console.print(f"[dim]Organization:[/dim] {_sanitize(workflow.org_slug)}")
     if workflow.description:
         console.print(f"[dim]Description:[/dim] {_sanitize(workflow.description)}")
     console.print(f"[dim]Active:[/dim] {'Yes' if workflow.is_active else 'No'}")

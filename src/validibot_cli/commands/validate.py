@@ -207,6 +207,7 @@ def _display_run_result(run: ValidationRun, verbose: bool = False) -> None:
 def _wait_for_completion(
     client: ValidibotClient,
     run_id: str,
+    org: str,
     poll_interval: int,
     timeout: int,
     show_progress: bool = True,
@@ -216,7 +217,7 @@ def _wait_for_completion(
 
     if not show_progress:
         while True:
-            run = client.get_validation_run(run_id)
+            run = client.get_validation_run(run_id, org=org)
             if run.is_complete:
                 return run
 
@@ -225,7 +226,7 @@ def _wait_for_completion(
                 err_console.print("Timeout waiting for validation.", style="yellow")
                 err_console.print(f"Run ID: {run_id}", style="dim", markup=False)
                 err_console.print(
-                    f"Check status with: validibot runs show {run_id}",
+                    f"Check status with: validibot validate status {run_id} --org {org}",
                     style="dim",
                     markup=False,
                 )
@@ -242,7 +243,7 @@ def _wait_for_completion(
         task = progress.add_task("Running validation...", total=None)
 
         while True:
-            run = client.get_validation_run(run_id)
+            run = client.get_validation_run(run_id, org=org)
             status = run.status.value
 
             # Update progress description
@@ -258,7 +259,7 @@ def _wait_for_completion(
                 err_console.print("Timeout waiting for validation.", style="yellow")
                 err_console.print(f"Run ID: {run_id}", style="dim", markup=False)
                 err_console.print(
-                    f"Check status with: validibot runs show {run_id}",
+                    f"Check status with: validibot validate status {run_id} --org {org}",
                     style="dim",
                     markup=False,
                 )
@@ -286,13 +287,13 @@ def run(
         ),
     ],
     org: Annotated[
-        str | None,
+        str,
         typer.Option(
             "--org",
             "-o",
-            help="Organization slug (for disambiguating workflow slugs)",
+            help="Organization slug (required)",
         ),
-    ] = None,
+    ],
     project: Annotated[
         str | None,
         typer.Option(
@@ -354,16 +355,15 @@ def run(
     Uploads the file to Validibot and runs the specified workflow.
     By default, waits for the validation to complete and shows results.
 
-    You can specify the workflow by ID or slug. If using a slug and it matches
-    multiple workflows, use --org, --project, and/or --version to filter.
+    You can specify the workflow by ID or slug. Use --version to select
+    a specific workflow version.
 
     [bold]Examples:[/bold]
 
-        validibot validate model.idf -w abc123
-        validibot validate model.idf -w my-workflow --org my-org
-        validibot validate model.idf -w my-workflow --org my-org --project my-project
-        validibot validate model.idf -w my-workflow --org my-org --version 2
-        validibot validate model.fmu --workflow def456 --no-wait
+        validibot validate run model.idf -w my-workflow --org my-org
+        validibot validate run model.idf -w my-workflow -o my-org --version 2
+        validibot validate run model.idf -w my-workflow -o my-org -p my-project
+        validibot validate run model.fmu -w my-workflow -o my-org --no-wait
     """
     # Validate file exists and is readable
     if not file.is_file():
@@ -383,8 +383,8 @@ def run(
         run_data = client.start_validation(
             workflow_id=workflow,
             file_path=file,
-            name=name,
             org=org,
+            name=name,
             project=project,
             version=version,
         )
@@ -393,14 +393,13 @@ def run(
         if e.matches:
             err_console.print("\nMatching workflows:", style="dim")
             for match in e.matches:
-                match_org = match.get("org", "?")
                 match_version = match.get("version", "?")
                 err_console.print(
-                    f"  • org={match_org}, version={match_version}",
+                    f"  • version={match_version}",
                     markup=False,
                 )
             err_console.print(
-                "\nUse --org and/or --version to specify which workflow.",
+                "\nUse --version to specify which workflow.",
                 style="dim",
             )
         raise typer.Exit(1) from None
@@ -430,7 +429,7 @@ def run(
             console.print()
             console.print(f"Run ID: {run_id}", style="dim", markup=False)
             console.print(
-                f"Check status with: validibot runs show {run_id}",
+                f"Check status with: validibot validate status {run_id} --org {org}",
                 style="dim",
                 markup=False,
             )
@@ -444,6 +443,7 @@ def run(
         final_run = _wait_for_completion(
             client,
             run_id,
+            org=org,
             poll_interval=poll_interval,
             timeout=timeout,
             show_progress=not json_output,
@@ -486,6 +486,14 @@ def status(
         str,
         typer.Argument(help="Validation run ID"),
     ],
+    org: Annotated[
+        str,
+        typer.Option(
+            "--org",
+            "-o",
+            help="Organization slug (required)",
+        ),
+    ],
     json_output: Annotated[
         bool,
         typer.Option(
@@ -505,10 +513,15 @@ def status(
 ) -> None:
     """
     Check the status of a validation run.
+
+    [bold]Examples:[/bold]
+
+        validibot validate status abc123 --org my-org
+        validibot validate status abc123 -o my-org --json
     """
     try:
         client = get_client()
-        run_data = client.get_validation_run(run_id)
+        run_data = client.get_validation_run(run_id, org=org)
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None

@@ -304,4 +304,4 @@ uv run mypy src/
 
 This CLI is open source under the MIT License - see [LICENSE](LICENSE) for details.
 
-**Note:** This is an open-source client for the [Validibot](https://validibot.com) service. The Validibot platform itself is a commercial product with separate [terms of service](https://validibot.com/terms).
+**Note:** This is an open-source client for the [Validibot](https://validibot.com) service. The Validibot platform itself is a commercial product with separate [terms of service]( https://validibot.com/terms ).

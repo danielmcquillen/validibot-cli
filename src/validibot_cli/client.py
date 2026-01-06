@@ -261,9 +261,19 @@ class ValidibotClient:
         data = self.get("/api/v1/auth/me/")
         return User.model_validate(data)
 
-    def list_workflows(self) -> list[Workflow]:
-        """List available workflows."""
-        response = self.get("/api/v1/workflows/")
+    def list_workflows(self, org: str) -> list[Workflow]:
+        """List available workflows for an organization.
+
+        Uses org-scoped API routes per ADR-2026-01-06.
+
+        Args:
+            org: Organization slug (required).
+
+        Returns:
+            List of workflows in the organization.
+        """
+        safe_org = quote(org, safe="")
+        response = self.get(f"/api/v1/orgs/{safe_org}/workflows/")
         # Handle paginated response
         if isinstance(response, dict) and "results" in response:
             items = response["results"]
@@ -274,15 +284,17 @@ class ValidibotClient:
     def get_workflow(
         self,
         workflow_id: str,
-        org: str | None = None,
+        org: str,
         version: str | None = None,
         project: str | None = None,
     ) -> Workflow:
         """Get a workflow by ID or slug.
 
+        Uses org-scoped API routes per ADR-2026-01-06.
+
         Args:
             workflow_id: Workflow ID (integer) or slug (string).
-            org: Organization slug for disambiguation when using workflow slug.
+            org: Organization slug (required).
             version: Workflow version for disambiguation.
             project: Project slug for filtering within an organization.
 
@@ -293,18 +305,17 @@ class ValidibotClient:
             AmbiguousWorkflowError: If multiple workflows match the slug.
             NotFoundError: If no workflow is found.
         """
-        # Build query params for disambiguation/filtering
+        # Build query params for filtering
         params: dict[str, str] = {}
-        if org:
-            params["org"] = org
         if version:
             params["version"] = version
         if project:
             params["project"] = project
 
-        # URL-encode the workflow_id to prevent path injection
+        # URL-encode to prevent path injection
+        safe_org = quote(org, safe="")
         safe_workflow_id = quote(workflow_id, safe="")
-        path = f"/api/v1/workflows/{safe_workflow_id}/"
+        path = f"/api/v1/orgs/{safe_org}/workflows/{safe_workflow_id}/"
         try:
             data = self.get(path, params=params if params else None)
         except APIError as e:
@@ -317,18 +328,21 @@ class ValidibotClient:
         self,
         workflow_id: str,
         file_path: Path,
+        org: str,
         name: str | None = None,
-        org: str | None = None,
         version: str | None = None,
         project: str | None = None,
     ) -> ValidationRun:
         """Start a validation run by uploading a file.
 
+        Uses org-scoped API routes per ADR-2026-01-06.
+        The endpoint is /orgs/{org}/workflows/{id}/runs/ (not /start/).
+
         Args:
             workflow_id: Workflow ID (integer) or slug (string).
             file_path: Path to the file to validate.
+            org: Organization slug (required).
             name: Optional name for this validation run.
-            org: Organization slug for disambiguation when using workflow slug.
             version: Workflow version for disambiguation.
             project: Project slug for filtering within an organization.
 
@@ -338,18 +352,17 @@ class ValidibotClient:
         Raises:
             AmbiguousWorkflowError: If multiple workflows match the slug.
         """
-        # Build query params for disambiguation/filtering
+        # Build query params for filtering
         params: dict[str, str] = {}
-        if org:
-            params["org"] = org
         if version:
             params["version"] = version
         if project:
             params["project"] = project
 
-        # URL-encode the workflow_id to prevent path injection
+        # URL-encode to prevent path injection
+        safe_org = quote(org, safe="")
         safe_workflow_id = quote(workflow_id, safe="")
-        path = f"/api/v1/workflows/{safe_workflow_id}/start/"
+        path = f"/api/v1/orgs/{safe_org}/workflows/{safe_workflow_id}/runs/"
         if params:
             path = f"{path}?{urlencode(params)}"
 
@@ -369,10 +382,21 @@ class ValidibotClient:
 
         return ValidationRun.model_validate(data)
 
-    def get_validation_run(self, run_id: str) -> ValidationRun:
-        """Get validation run status."""
+    def get_validation_run(self, run_id: str, org: str) -> ValidationRun:
+        """Get validation run status.
+
+        Uses org-scoped API routes per ADR-2026-01-06.
+
+        Args:
+            run_id: Validation run ID (UUID).
+            org: Organization slug (required).
+
+        Returns:
+            The validation run details.
+        """
+        safe_org = quote(org, safe="")
         safe_run_id = quote(run_id, safe="")
-        data = self.get(f"/api/v1/validation-runs/{safe_run_id}/")
+        data = self.get(f"/api/v1/orgs/{safe_org}/runs/{safe_run_id}/")
         return ValidationRun.model_validate(data)
 
 

@@ -17,6 +17,14 @@ err_console = Console(stderr=True)
 @app.command(name="show")
 def show(
     run_id: Annotated[str, typer.Argument(help="Validation run ID")],
+    org: Annotated[
+        str,
+        typer.Option(
+            "--org",
+            "-o",
+            help="Organization slug (required)",
+        ),
+    ],
     json_output: Annotated[
         bool,
         typer.Option(
@@ -34,10 +42,17 @@ def show(
         ),
     ] = False,
 ) -> None:
-    """Show a validation run status and results."""
+    """
+    Show a validation run status and results.
+
+    [bold]Examples:[/bold]
+
+        validibot runs show abc123 --org my-org
+        validibot runs show abc123 -o my-org --json
+    """
     try:
         client = get_client()
-        run_data = client.get_validation_run(run_id)
+        run_data = client.get_validation_run(run_id, org=org)
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None

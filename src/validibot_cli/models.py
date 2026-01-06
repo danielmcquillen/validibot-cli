@@ -105,7 +105,8 @@ class Workflow(BaseModel):
     slug: str = ""
     name: str
     description: str = ""
-    version: int | None = None
+    version: str | int | None = None  # Can be string (semver) or int
+    org_slug: str = ""  # Organization slug (ADR-2026-01-06)
     is_active: bool = True
     steps: list[WorkflowStep] = Field(default_factory=list)
     created_at: datetime | None = None
