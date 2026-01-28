@@ -7,10 +7,13 @@ import pytest
 
 from validibot_cli.auth import (
     delete_default_org,
+    delete_server_url,
     delete_token,
     get_default_org,
+    get_stored_server_url,
     get_stored_token,
     save_default_org,
+    save_server_url,
     save_token,
 )
 
@@ -156,7 +159,9 @@ class TestDefaultOrgStorage:
         assert get_default_org(api_url="https://validibot.com") == "my-org"
         assert get_stored_token(api_url="https://validibot.com") == "test_token"
 
-    def test_default_org_persists_after_token_delete(self, temp_config_dir, no_env_token):
+    def test_default_org_persists_after_token_delete(
+        self, temp_config_dir, no_env_token
+    ):
         """Test that default org is preserved when deleting tokens."""
         # Save both a token and default org
         save_token("test_token", api_url="https://validibot.com")
@@ -170,3 +175,48 @@ class TestDefaultOrgStorage:
         assert get_default_org(api_url="https://validibot.com") == "my-org"
         # But token should be gone
         assert get_stored_token(api_url="https://validibot.com") is None
+
+
+class TestServerUrlStorage:
+    """Tests for server URL storage."""
+
+    def test_save_and_retrieve_server_url(self, temp_config_dir):
+        """Test saving and retrieving a server URL."""
+        save_server_url("https://my-server.example.com")
+        assert get_stored_server_url() == "https://my-server.example.com"
+
+    def test_save_server_url_normalizes(self, temp_config_dir):
+        """Test that server URL is normalized when saved."""
+        # Without scheme
+        save_server_url("my-server.example.com")
+        assert get_stored_server_url() == "https://my-server.example.com"
+
+    def test_delete_server_url(self, temp_config_dir):
+        """Test deleting a stored server URL."""
+        save_server_url("https://my-server.example.com")
+        assert get_stored_server_url() is not None
+
+        deleted = delete_server_url()
+        assert deleted is True
+        assert get_stored_server_url() is None
+
+    def test_delete_nonexistent_server_url(self, temp_config_dir):
+        """Test deleting when no server URL exists."""
+        deleted = delete_server_url()
+        assert deleted is False
+
+    def test_server_url_persists_with_token(self, temp_config_dir, no_env_token):
+        """Test that server URL is preserved when saving tokens."""
+        save_server_url("https://my-server.example.com")
+        save_token("test_token", api_url="https://my-server.example.com")
+
+        # Server URL should still be there
+        assert get_stored_server_url() == "https://my-server.example.com"
+
+    def test_server_url_persists_with_default_org(self, temp_config_dir, no_env_token):
+        """Test that server URL is preserved when saving default org."""
+        save_server_url("https://my-server.example.com")
+        save_default_org("my-org", api_url="https://my-server.example.com")
+
+        # Server URL should still be there
+        assert get_stored_server_url() == "https://my-server.example.com"

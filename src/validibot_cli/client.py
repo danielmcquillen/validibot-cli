@@ -69,9 +69,7 @@ def _check_ambiguous_workflow_error(error: APIError) -> None:
 
     try:
         error_data = (
-            json.loads(error.detail)
-            if isinstance(error.detail, str)
-            else error.detail
+            json.loads(error.detail) if isinstance(error.detail, str) else error.detail
         )
         if isinstance(error_data, dict) and "matches" in error_data:
             raise AmbiguousWorkflowError(

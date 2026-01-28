@@ -133,9 +133,12 @@ def save_token(token: str, api_url: str | None = None) -> None:
 
     tokens[host_key] = token
 
-    # Preserve existing default_orgs
+    # Preserve existing data
     default_orgs = data.get("default_orgs", {})
-    _write_token_file(token_file, {"tokens": tokens, "default_orgs": default_orgs})
+    new_data: dict[str, object] = {"tokens": tokens, "default_orgs": default_orgs}
+    if "server_url" in data:
+        new_data["server_url"] = data["server_url"]
+    _write_token_file(token_file, new_data)
 
 
 def get_stored_token(api_url: str | None = None) -> str | None:
@@ -215,12 +218,17 @@ def delete_token(api_url: str | None = None) -> bool:
                 file_changed = True
 
             if file_changed:
-                # Preserve default_orgs when rewriting
+                # Preserve other data when rewriting
                 default_orgs = data.get("default_orgs", {})
-                if updated_tokens or default_orgs:
-                    _write_token_file(
-                        token_file, {"tokens": updated_tokens, "default_orgs": default_orgs}
-                    )
+                server_url = data.get("server_url")
+                if updated_tokens or default_orgs or server_url:
+                    new_data: dict[str, object] = {
+                        "tokens": updated_tokens,
+                        "default_orgs": default_orgs,
+                    }
+                    if server_url:
+                        new_data["server_url"] = server_url
+                    _write_token_file(token_file, new_data)
                 else:
                     token_file.unlink()
                 deleted = True
@@ -253,9 +261,12 @@ def save_default_org(org_slug: str, api_url: str | None = None) -> None:
 
     default_orgs[host_key] = org_slug
 
-    # Preserve existing tokens
+    # Preserve existing data
     tokens = data.get("tokens", {})
-    _write_token_file(token_file, {"tokens": tokens, "default_orgs": default_orgs})
+    new_data: dict[str, object] = {"tokens": tokens, "default_orgs": default_orgs}
+    if "server_url" in data:
+        new_data["server_url"] = data["server_url"]
+    _write_token_file(token_file, new_data)
 
 
 def get_default_org(api_url: str | None = None) -> str | None:
@@ -317,7 +328,10 @@ def delete_default_org(api_url: str | None = None) -> bool:
 
         updated_orgs.pop(host_key, None)
         tokens = data.get("tokens", {})
-        _write_token_file(token_file, {"tokens": tokens, "default_orgs": updated_orgs})
+        new_data: dict[str, object] = {"tokens": tokens, "default_orgs": updated_orgs}
+        if "server_url" in data:
+            new_data["server_url"] = data["server_url"]
+        _write_token_file(token_file, new_data)
         return True
     except Exception:
         return False
@@ -335,3 +349,60 @@ def get_token_storage_location() -> str:
             pass
 
     return str(_get_token_file())
+
+
+def save_server_url(server_url: str) -> None:
+    """Save the server URL to the config file.
+
+    Args:
+        server_url: The server URL to save.
+    """
+    normalized = normalize_api_url(server_url)
+    token_file = _get_token_file()
+    data = _load_token_file(token_file)
+
+    data["server_url"] = normalized
+    _write_token_file(token_file, data)
+
+
+def get_stored_server_url() -> str | None:
+    """Get the stored server URL.
+
+    Returns:
+        The stored server URL, or None if not set.
+    """
+    token_file = _get_token_file()
+    if not token_file.exists():
+        return None
+
+    try:
+        data = _load_token_file(token_file)
+        server_url = data.get("server_url")
+        if server_url and isinstance(server_url, str):
+            return server_url
+    except Exception:
+        pass
+
+    return None
+
+
+def delete_server_url() -> bool:
+    """Delete the stored server URL.
+
+    Returns:
+        True if a server URL was deleted, False if none was stored.
+    """
+    token_file = _get_token_file()
+    if not token_file.exists():
+        return False
+
+    try:
+        data = _load_token_file(token_file)
+        if "server_url" not in data:
+            return False
+
+        del data["server_url"]
+        _write_token_file(token_file, data)
+        return True
+    except Exception:
+        return False

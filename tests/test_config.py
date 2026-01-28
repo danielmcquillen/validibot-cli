@@ -22,4 +22,3 @@ def test_settings_allows_http_localhost_by_default():
 def test_settings_allows_http_non_localhost_with_override():
     settings = Settings(api_url="http://example.com", allow_insecure_api_url=True)
     assert settings.api_url == "http://example.com"
-

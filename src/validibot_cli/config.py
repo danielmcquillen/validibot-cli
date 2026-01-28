@@ -46,7 +46,9 @@ def normalize_api_url(api_url: str) -> str:
     host = parsed.hostname.lower()
     host_for_netloc = f"[{host}]" if ":" in host else host
     netloc = (
-        f"{host_for_netloc}:{parsed.port}" if parsed.port is not None else host_for_netloc
+        f"{host_for_netloc}:{parsed.port}"
+        if parsed.port is not None
+        else host_for_netloc
     )
 
     return f"{scheme}://{netloc}"
@@ -96,9 +98,9 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
-    # API configuration
-    api_url: str = Field(
-        default="https://validibot.com",
+    # API configuration - no default; must be configured via set-server or env var
+    api_url: str | None = Field(
+        default=None,
         description="Base URL for the Validibot API",
     )
 
@@ -135,11 +137,15 @@ class Settings(BaseSettings):
 
     @field_validator("api_url")
     @classmethod
-    def _normalize_api_url(cls, v: str) -> str:
+    def _normalize_api_url(cls, v: str | None) -> str | None:
+        if v is None:
+            return None
         return normalize_api_url(v)
 
     @model_validator(mode="after")
     def _enforce_https_api_url(self) -> "Settings":
+        if self.api_url is None:
+            return self
         parsed = urlparse(self.api_url)
         host = parsed.hostname or ""
         if (
@@ -166,9 +172,44 @@ def get_settings() -> Settings:
     return _settings
 
 
+class ServerNotConfiguredError(Exception):
+    """Raised when no server URL has been configured."""
+
+    pass
+
+
 def get_api_url() -> str:
-    """Get the configured API URL."""
-    return get_settings().api_url
+    """Get the configured API URL.
+
+    Checks in order:
+    1. VALIDIBOT_API_URL environment variable
+    2. Stored server URL from 'validibot config set-server'
+
+    Raises:
+        ServerNotConfiguredError: If no server URL is configured.
+    """
+    import os
+
+    # Environment variable takes precedence (handled by Settings)
+    env_url = os.environ.get("VALIDIBOT_API_URL")
+    if env_url:
+        settings = get_settings()
+        if settings.api_url:
+            return settings.api_url
+        # Normalize the env var directly if Settings didn't process it
+        return normalize_api_url(env_url)
+
+    # Check for stored server URL (lazy import to avoid circular dependency)
+    from validibot_cli.auth import get_stored_server_url
+
+    stored_url = get_stored_server_url()
+    if stored_url:
+        return stored_url
+
+    # No server configured
+    raise ServerNotConfiguredError(
+        "No server configured. Run 'validibot config set-server <url>' first."
+    )
 
 
 def get_timeout() -> int:

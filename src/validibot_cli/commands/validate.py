@@ -60,6 +60,7 @@ def _resolve_org(org: str | None) -> str:
     )
     raise typer.Exit(1)
 
+
 app = typer.Typer()
 console = Console()
 err_console = Console(stderr=True)
@@ -179,7 +180,9 @@ def _display_run_result(run: ValidationRun, verbose: bool = False) -> None:
             if total_errors is not None:
                 findings_lines.append(f"  [red]Error count:[/red] {total_errors}")
             if total_warnings is not None:
-                findings_lines.append(f"  [yellow]Warning count:[/yellow] {total_warnings}")
+                findings_lines.append(
+                    f"  [yellow]Warning count:[/yellow] {total_warnings}"
+                )
             if total_info is not None:
                 findings_lines.append(f"  [blue]Info count:[/blue] {total_info}")
             findings_lines.append("")
@@ -195,7 +198,9 @@ def _display_run_result(run: ValidationRun, verbose: bool = False) -> None:
                 if step_run.error_count > 0:
                     counts.append(f"[red]{step_run.error_count} error(s)[/red]")
                 if step_run.warning_count > 0:
-                    counts.append(f"[yellow]{step_run.warning_count} warning(s)[/yellow]")
+                    counts.append(
+                        f"[yellow]{step_run.warning_count} warning(s)[/yellow]"
+                    )
                 if step_run.info_count > 0:
                     counts.append(f"[blue]{step_run.info_count} info[/blue]")
 
@@ -453,7 +458,9 @@ def run(
         raise typer.Exit(1) from None
 
     run_id = run_data.id
-    err_console.print(f"Validation started (run: {run_id})", style="green", markup=False)
+    err_console.print(
+        f"Validation started (run: {run_id})", style="green", markup=False
+    )
 
     # If not waiting, just show the run ID and exit
     if not wait:
@@ -492,7 +499,9 @@ def run(
         err_console.print(f"Run ID: {run_id}", style="dim", markup=False)
         raise typer.Exit(130) from None
     except APIError as e:
-        err_console.print(f"Error checking status: {e.message}", style="red", markup=False)
+        err_console.print(
+            f"Error checking status: {e.message}", style="red", markup=False
+        )
         raise typer.Exit(1) from None
 
     # Display result

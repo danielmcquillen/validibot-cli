@@ -21,7 +21,7 @@ from validibot_cli.auth import (
     save_token,
 )
 from validibot_cli.client import AuthenticationError, ValidibotClient, get_client
-from validibot_cli.config import get_api_url
+from validibot_cli.config import ServerNotConfiguredError, get_api_url
 
 app = typer.Typer(no_args_is_help=True)
 console = Console()
@@ -57,15 +57,31 @@ def login(
     """
     Authenticate with Validibot using an API key.
 
-    Get your API key from the Validibot web app at:
-    https://validibot.com/app/users/api-key/
+    Before logging in, configure your server URL:
+        validibot config set-server https://your-validibot-server.com
 
     The key will be stored securely in your system keyring.
     """
+    # Check server is configured
+    try:
+        server_url = get_api_url()
+    except ServerNotConfiguredError:
+        err_console.print(
+            "Error: No server configured.",
+            style="red",
+            markup=False,
+        )
+        err_console.print(
+            "Run 'validibot config set-server <url>' first.",
+            style="dim",
+            markup=False,
+        )
+        raise typer.Exit(1) from None
+
     # Prompt for API key if not provided
     if token is None:
         console.print()
-        api_key_url = f"{get_api_url()}/app/users/api-key/"
+        api_key_url = f"{server_url}/app/users/api-key/"
         console.print("Get your API key from:", style="dim")
         console.print(api_key_url, style="dim", markup=False)
         console.print()
@@ -143,7 +159,9 @@ def login(
                         idx = int(choice) - 1
                         if 0 <= idx < len(orgs):
                             save_default_org(orgs[idx].slug)
-                            org_message = f"\n[dim]Default org:[/dim] {escape(orgs[idx].slug)}"
+                            org_message = (
+                                f"\n[dim]Default org:[/dim] {escape(orgs[idx].slug)}"
+                            )
                             break
                         else:
                             err_console.print(
@@ -154,7 +172,9 @@ def login(
                         err_console.print("Please enter a valid number", style="yellow")
         except Exception as e:
             # Don't fail login if org fetch fails, but show the error for debugging
-            err_console.print(f"Warning: Could not fetch orgs: {e}", style="yellow", markup=False)
+            err_console.print(
+                f"Warning: Could not fetch orgs: {e}", style="yellow", markup=False
+            )
             org_message = "\n[dim]Default org:[/dim] could not be determined"
 
     # Success message
@@ -185,14 +205,18 @@ def logout() -> None:
     again to use commands that require authentication.
     """
     if not is_authenticated():
-        err_console.print("You are not currently logged in.", style="yellow", markup=False)
+        err_console.print(
+            "You are not currently logged in.", style="yellow", markup=False
+        )
         raise typer.Exit(0)
 
     deleted = delete_token()
     if deleted:
         console.print("[green]Logged out successfully.[/green]")
     else:
-        err_console.print("No credentials found to remove.", style="yellow", markup=False)
+        err_console.print(
+            "No credentials found to remove.", style="yellow", markup=False
+        )
 
 
 @app.command()
@@ -202,9 +226,27 @@ def whoami() -> None:
 
     Displays your account information and verifies your API key is still valid.
     """
+    # Check server is configured
+    try:
+        server_url = get_api_url()
+    except ServerNotConfiguredError:
+        err_console.print(
+            "Error: No server configured.",
+            style="red",
+            markup=False,
+        )
+        err_console.print(
+            "Run 'validibot config set-server <url>' first.",
+            style="dim",
+            markup=False,
+        )
+        raise typer.Exit(1) from None
+
     if not is_authenticated():
         err_console.print("Not logged in.", style="yellow", markup=False)
-        err_console.print("Run 'validibot login' to authenticate.", style="dim", markup=False)
+        err_console.print(
+            "Run 'validibot login' to authenticate.", style="dim", markup=False
+        )
         raise typer.Exit(1)
 
     try:
@@ -242,7 +284,7 @@ def whoami() -> None:
             + (f"[dim]Username:[/dim] {escape(username)}\n" if username else "")
             + f"[dim]Email:[/dim] {escape(email)}\n"
             f"[dim]API Key:[/dim] {escape(key_display)}\n"
-            f"[dim]API:[/dim] {escape(get_api_url())}\n"
+            f"[dim]Server:[/dim] {escape(server_url)}\n"
             f"[dim]Default org:[/dim] {escape(default_org) if default_org else 'not set'}",
             title="Current User",
             border_style="blue",
@@ -270,4 +312,6 @@ def status() -> None:
         )
     else:
         err_console.print("Not authenticated", style="yellow", markup=False)
-        err_console.print("Run 'validibot login' to authenticate.", style="dim", markup=False)
+        err_console.print(
+            "Run 'validibot login' to authenticate.", style="dim", markup=False
+        )

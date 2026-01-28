@@ -9,6 +9,9 @@ from validibot_cli.models import User
 
 runner = CliRunner()
 
+# Mock server URL for all tests
+MOCK_SERVER = "https://test.validibot.com"
+
 
 def _mock_user() -> User:
     """Create a mock User for testing."""
@@ -20,14 +23,21 @@ class TestLoginCommand:
 
     def test_login_with_token_flag(self, tmp_path):
         """Test login when token is provided via --token flag."""
-        with patch("validibot_cli.commands.auth.save_token") as mock_save:
-            with patch("validibot_cli.commands.auth.ValidibotClient") as mock_client:
-                mock_client.return_value.get_current_user.return_value = _mock_user()
+        with patch("validibot_cli.commands.auth.get_api_url", return_value=MOCK_SERVER):
+            with patch("validibot_cli.commands.auth.save_token") as mock_save:
                 with patch(
-                    "validibot_cli.commands.auth.get_token_storage_location",
-                    return_value="test-keyring",
-                ):
-                    result = runner.invoke(app, ["login", "--token", "my_token_123"])
+                    "validibot_cli.commands.auth.ValidibotClient"
+                ) as mock_client:
+                    mock_client.return_value.get_current_user.return_value = (
+                        _mock_user()
+                    )
+                    with patch(
+                        "validibot_cli.commands.auth.get_token_storage_location",
+                        return_value="test-keyring",
+                    ):
+                        result = runner.invoke(
+                            app, ["login", "--token", "my_token_123"]
+                        )
 
         assert result.exit_code == 0
         assert "Authentication successful" in result.output
@@ -35,15 +45,22 @@ class TestLoginCommand:
 
     def test_login_prompts_for_token_when_not_provided(self, tmp_path):
         """Test that login prompts for token when not provided via flag."""
-        with patch("validibot_cli.commands.auth.save_token") as mock_save:
-            with patch("validibot_cli.commands.auth.ValidibotClient") as mock_client:
-                mock_client.return_value.get_current_user.return_value = _mock_user()
+        with patch("validibot_cli.commands.auth.get_api_url", return_value=MOCK_SERVER):
+            with patch("validibot_cli.commands.auth.save_token") as mock_save:
                 with patch(
-                    "validibot_cli.commands.auth.get_token_storage_location",
-                    return_value="test-keyring",
-                ):
-                    # Simulate user typing a token when prompted
-                    result = runner.invoke(app, ["login"], input="my_prompted_token\n")
+                    "validibot_cli.commands.auth.ValidibotClient"
+                ) as mock_client:
+                    mock_client.return_value.get_current_user.return_value = (
+                        _mock_user()
+                    )
+                    with patch(
+                        "validibot_cli.commands.auth.get_token_storage_location",
+                        return_value="test-keyring",
+                    ):
+                        # Simulate user typing a token when prompted
+                        result = runner.invoke(
+                            app, ["login"], input="my_prompted_token\n"
+                        )
 
         assert result.exit_code == 0
         assert "Authentication successful" in result.output
@@ -51,11 +68,14 @@ class TestLoginCommand:
 
     def test_login_with_no_verify_skips_api_call(self, tmp_path):
         """Test that --no-verify skips the API verification."""
-        with patch("validibot_cli.commands.auth.save_token") as mock_save:
-            with patch("validibot_cli.commands.auth.ValidibotClient") as mock_client:
-                result = runner.invoke(
-                    app, ["login", "--token", "my_token_123", "--no-verify"]
-                )
+        with patch("validibot_cli.commands.auth.get_api_url", return_value=MOCK_SERVER):
+            with patch("validibot_cli.commands.auth.save_token") as mock_save:
+                with patch(
+                    "validibot_cli.commands.auth.ValidibotClient"
+                ) as mock_client:
+                    result = runner.invoke(
+                        app, ["login", "--token", "my_token_123", "--no-verify"]
+                    )
 
         assert result.exit_code == 0
         assert "API key saved successfully" in result.output
@@ -65,7 +85,21 @@ class TestLoginCommand:
 
     def test_login_empty_key_fails(self):
         """Test that empty API key produces an error."""
-        result = runner.invoke(app, ["login"], input="\n\n")
+        with patch("validibot_cli.commands.auth.get_api_url", return_value=MOCK_SERVER):
+            result = runner.invoke(app, ["login"], input="\n\n")
 
         # Typer's prompt with hide_input aborts on empty input
         assert result.exit_code == 1
+
+    def test_login_fails_without_server_configured(self):
+        """Test that login fails when no server is configured."""
+        from validibot_cli.config import ServerNotConfiguredError
+
+        with patch(
+            "validibot_cli.commands.auth.get_api_url",
+            side_effect=ServerNotConfiguredError("No server configured"),
+        ):
+            result = runner.invoke(app, ["login", "--token", "my_token_123"])
+
+        assert result.exit_code == 1
+        assert "No server configured" in result.output

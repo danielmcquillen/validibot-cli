@@ -12,7 +12,7 @@ import typer
 from rich.console import Console
 
 from validibot_cli import __version__
-from validibot_cli.commands import auth, runs, validate, workflows
+from validibot_cli.commands import auth, config, runs, validate, workflows
 
 # Create the main app with rich markup for better help formatting
 app = typer.Typer(
@@ -27,6 +27,7 @@ console = Console()
 
 # Register command groups
 app.add_typer(auth.app, name="auth", help="Authentication commands")
+app.add_typer(config.app, name="config", help="Configuration commands")
 app.add_typer(workflows.app, name="workflows", help="Workflow commands")
 app.add_typer(
     runs.app,

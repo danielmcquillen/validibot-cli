@@ -33,6 +33,7 @@ def _resolve_org(org: str | None) -> str:
     )
     raise typer.Exit(1)
 
+
 app = typer.Typer(no_args_is_help=True)
 err_console = Console(stderr=True)
 
@@ -88,7 +89,9 @@ def show(
         else:
             err_console.print(f"Error: {e.message}", style="red", markup=False)
             if e.detail:
-                err_console.print(str(e.detail), style="dim", markup=False, highlight=False)
+                err_console.print(
+                    str(e.detail), style="dim", markup=False, highlight=False
+                )
         raise typer.Exit(1) from None
     except Exception as e:
         err_console.print(f"Error: {e}", style="red", markup=False)

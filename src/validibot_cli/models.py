@@ -81,6 +81,7 @@ class Issue(BaseModel):
     code: str = ""
     assertion_id: OptionalStrId = None
 
+
 class User(BaseModel):
     """Authenticated user information."""
 

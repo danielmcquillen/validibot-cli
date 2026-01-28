@@ -5,13 +5,13 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/validibot-cli.svg)](https://pypi.org/project/validibot-cli/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A command-line interface for [Validibot](https://validibot.com) - your automated data validation assistant.
+A command-line interface for Validibot - your automated data validation assistant.
 
-What's Validibot CLI? Validibot CLI is a small library that provides a command line access to Validibot.
-What's Validibot? So happy you asked! Read more here >> [https://validibot.com ](https://validibot.com)
+Validibot CLI provides command-line access to self-hosted Validibot servers for automated data validation workflows.
 
 ## Features
 
+- **Self-hosted support** - connect to your own Validibot server
 - **Run validations** from the command line or CI/CD pipelines
 - **Workflow support** - reference workflows by ID or human-readable slug
 - **Organization filtering** - disambiguate workflows across orgs and projects
@@ -37,9 +37,17 @@ pipx install validibot-cli
 
 ## Quick Start
 
-### 1. Authenticate
+### 1. Configure Your Server
 
-Get your API key from the [Validibot web app](https://validibot.com/app/users/api-key/), then:
+First, configure the CLI to connect to your Validibot server:
+
+```bash
+validibot config set-server https://validibot.your-company.com
+```
+
+### 2. Authenticate
+
+Get your API key from your Validibot server's web interface, then:
 
 ```bash
 validibot login
@@ -48,7 +56,7 @@ validibot login
 
 Your API key is stored securely in your system keyring.
 
-### 2. List Available Workflows
+### 3. List Available Workflows
 
 ```bash
 validibot workflows list
@@ -56,7 +64,7 @@ validibot workflows list
 
 This displays a table of workflows you have access to, including their IDs, names, and status.
 
-### 3. Run a Validation
+### 4. Run a Validation
 
 ```bash
 # By workflow ID
@@ -69,6 +77,14 @@ validibot validate model.idf --workflow energyplus-schema-check
 The CLI uploads your file, runs the validation workflow, and displays results when complete.
 
 ## Commands
+
+### Server Configuration
+
+```bash
+validibot config set-server <url>   # Set server URL (required before login)
+validibot config get-server         # Show current server URL
+validibot config clear-server       # Clear stored server URL
+```
 
 ### Authentication
 
@@ -98,7 +114,6 @@ The CLI uses your system's secure credential storage:
 - **Linux**: Secret Service (GNOME Keyring, KWallet, etc.)
 
 If the system keyring is unavailable, credentials fall back to `~/.config/validibot/credentials.json` with restrictive file permissions (owner read/write only).
-Tokens are stored per API host (based on `VALIDIBOT_API_URL`).
 
 ### Workflows
 
@@ -189,23 +204,32 @@ validibot validate model.idf -w <workflow-id-or-slug> --name "nightly-build-chec
 
 ## Configuration
 
+### Server URL Resolution
+
+The CLI determines which server to connect to in this order:
+
+1. `VALIDIBOT_API_URL` environment variable
+2. Stored server URL from `validibot config set-server`
+3. Error if neither is set
+
 ### Environment Variables
 
-| Variable                           | Description                                | Default                 |
-| ---------------------------------- | ------------------------------------------ | ----------------------- |
-| `VALIDIBOT_API_URL`                | API base URL                               | `https://validibot.com` |
-| `VALIDIBOT_TOKEN`                  | API key (alternative to `validibot login`) | -                       |
-| `VALIDIBOT_ORG`                    | Default organization slug                  | -                       |
-| `VALIDIBOT_TIMEOUT`                | Request timeout in seconds                 | `300`                   |
-| `VALIDIBOT_POLL_INTERVAL`          | Status polling interval in seconds         | `5`                     |
-| `VALIDIBOT_NO_KEYRING`             | Disable keyring, use file storage          | `false`                 |
-| `VALIDIBOT_ALLOW_INSECURE_API_URL` | Allow non-HTTPS API base URL (dangerous)   | `false`                 |
+| Variable                           | Description                                | Default |
+| ---------------------------------- | ------------------------------------------ | ------- |
+| `VALIDIBOT_API_URL`                | Server URL (required if not set via CLI)   | -       |
+| `VALIDIBOT_TOKEN`                  | API key (alternative to `validibot login`) | -       |
+| `VALIDIBOT_ORG`                    | Default organization slug                  | -       |
+| `VALIDIBOT_TIMEOUT`                | Request timeout in seconds                 | `300`   |
+| `VALIDIBOT_POLL_INTERVAL`          | Status polling interval in seconds         | `5`     |
+| `VALIDIBOT_NO_KEYRING`             | Disable keyring, use file storage          | `false` |
+| `VALIDIBOT_ALLOW_INSECURE_API_URL` | Allow non-HTTPS API base URL (dangerous)   | `false` |
 
 ### Using Environment Variables for CI/CD
 
-Instead of running `validibot login`, you can set `VALIDIBOT_TOKEN` directly:
+For CI/CD pipelines, set the server URL and token via environment variables:
 
 ```bash
+export VALIDIBOT_API_URL="https://validibot.your-company.com"
 export VALIDIBOT_TOKEN="your-api-key"
 export VALIDIBOT_ORG="my-org"
 validibot validate model.idf -w my-workflow
@@ -257,6 +281,7 @@ jobs:
 
       - name: Validate model
         env:
+          VALIDIBOT_API_URL: ${{ vars.VALIDIBOT_API_URL }}
           VALIDIBOT_TOKEN: ${{ secrets.VALIDIBOT_TOKEN }}
         run: validibot validate model.idf -w ${{ vars.WORKFLOW_ID }}
 ```
@@ -270,6 +295,7 @@ validate:
     - pip install validibot-cli
     - validibot validate model.idf -w $WORKFLOW_ID
   variables:
+    VALIDIBOT_API_URL: $VALIDIBOT_API_URL
     VALIDIBOT_TOKEN: $VALIDIBOT_TOKEN
 ```
 
@@ -284,6 +310,7 @@ validate:
     pip install validibot-cli
     validibot validate model.idf -w $(WORKFLOW_ID)
   env:
+    VALIDIBOT_API_URL: $(VALIDIBOT_API_URL)
     VALIDIBOT_TOKEN: $(VALIDIBOT_TOKEN)
 ```
 
@@ -317,5 +344,3 @@ uv run mypy src/
 ## License
 
 This CLI is open source under the MIT License - see [LICENSE](LICENSE) for details.
-
-**Note:** This is an open-source client for the [Validibot](https://validibot.com) service. The Validibot platform itself is a commercial product with separate [terms of service]( https://validibot.com/terms ).

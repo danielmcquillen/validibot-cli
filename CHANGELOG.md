@@ -5,10 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.1.5] - 2026-01-07
+## [0.2.0] - 2026-01-29
+
+### Changed (BREAKING)
+
+- **Self-hosted only**: Removed default server URL (validibot.com). Users must now configure a server before use.
+- Server URL must be set via `validibot config set-server <url>` or `VALIDIBOT_API_URL` environment variable.
+
+### Added
+
+- New `validibot config` command group:
+  - `set-server <url>` - Configure server URL (required before login)
+  - `get-server` - Show current server URL and source
+  - `clear-server` - Clear stored server URL
+- Server URL resolution order: env var → stored config → error
 
 ### Updated
-- Fix default org bug
+
+- README rewritten for self-hosted deployment model
+- CI/CD examples updated to include `VALIDIBOT_API_URL`
+- All commands now check for server configuration before proceeding
+
+## [0.1.5] - 2026-01-07
+
+### Fixed
+
+- Fix default org bug where Organization model required `id` field not present in API response
 
 ## [0.1.4] - 2026-01-07
 

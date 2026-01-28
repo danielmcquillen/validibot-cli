@@ -36,6 +36,7 @@ def _resolve_org(org: str | None) -> str:
     )
     raise typer.Exit(1)
 
+
 app = typer.Typer(no_args_is_help=True)
 console = Console()
 err_console = Console(stderr=True)
@@ -109,7 +110,9 @@ def list_workflows(
     if json_output:
         import json
 
-        typer.echo(json.dumps([wf.model_dump(mode="json") for wf in workflows], indent=2))
+        typer.echo(
+            json.dumps([wf.model_dump(mode="json") for wf in workflows], indent=2)
+        )
         return
 
     # Display as table
@@ -142,7 +145,9 @@ def list_workflows(
     console.print(table)
     console.print()
     console.print(f"[dim]Found {len(workflows)} workflow(s)[/dim]")
-    console.print("[dim]Use slug or ID with 'validibot workflows show' or 'validibot validate run'[/dim]")
+    console.print(
+        "[dim]Use slug or ID with 'validibot workflows show' or 'validibot validate run'[/dim]"
+    )
 
 
 @app.command()
@@ -195,7 +200,9 @@ def show(
         else:
             err_console.print(f"Error: {e.message}", style="red", markup=False)
             if e.detail:
-                err_console.print(str(e.detail), style="dim", markup=False, highlight=False)
+                err_console.print(
+                    str(e.detail), style="dim", markup=False, highlight=False
+                )
         raise typer.Exit(1) from None
     except Exception as e:
         err_console.print(f"Error: {e}", style="red", markup=False)
