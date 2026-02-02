@@ -1,0 +1,27 @@
+Validibot CLI
+Copyright (c) 2024-2026 McQuillen Interactive Pty. Ltd.
+
+This product is licensed under the MIT License.
+See the LICENSE file for the full license text.
+
+TRADEMARKS
+
+"Validibot", the Validibot logo, and the Validibot robot character are
+trademarks of McQuillen Interactive Pty. Ltd. The MIT license grants rights
+to the source code only, not to the trademarks.
+
+You may use the Validibot name to accurately describe that your software
+uses or integrates with Validibot, but not in a way that suggests official
+endorsement or affiliation beyond that relationship.
+
+THIRD-PARTY COMPONENTS
+
+This software includes the following third-party components:
+
+- Typer (MIT License) - https://typer.tiangolo.com/
+- HTTPX (BSD License) - https://www.python-httpx.org/
+- Rich (MIT License) - https://rich.readthedocs.io/
+- Pydantic (MIT License) - https://docs.pydantic.dev/
+- Keyring (MIT License) - https://keyring.readthedocs.io/
+
+Each component is subject to its own license terms.

@@ -94,3 +94,5 @@ tmp/
 
 # AI generated files
 .claude
+
+.DS_Store
