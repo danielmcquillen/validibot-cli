@@ -1,22 +1,46 @@
+<div align="center">
+
 # Validibot CLI
 
-[![CI](https://github.com/danielmcquillen/validibot-cli/workflows/CI/badge.svg)](https://github.com/danielmcquillen/validibot-cli/actions)
+**Command-line interface for the Validibot data validation platform**
+
+[![Build Status](https://github.com/danielmcquillen/validibot-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/danielmcquillen/validibot-cli/actions)
 [![PyPI version](https://badge.fury.io/py/validibot-cli.svg)](https://pypi.org/project/validibot-cli/)
 [![Python versions](https://img.shields.io/pypi/pyversions/validibot-cli.svg)](https://pypi.org/project/validibot-cli/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-A command-line interface for Validibot - your automated data validation assistant.
+[Installation](#installation) •
+[Quick Start](#quick-start) •
+[Commands](#commands) •
+[CI/CD Integration](#cicd-integration) •
+[Documentation](https://docs.validibot.com/cli)
 
-Validibot CLI provides command-line access to self-hosted Validibot servers for automated data validation workflows.
+</div>
+
+---
+
+> [!NOTE]
+> This CLI is part of the [Validibot](https://github.com/danielmcquillen/validibot) open-source data validation platform. It connects to self-hosted Validibot servers to run validations from the command line or CI/CD pipelines.
+
+---
+
+## What is Validibot CLI?
+
+Validibot CLI provides command-line access to your Validibot server for automated data validation. Use it to:
+
+- **Run validations** from terminals, scripts, or CI/CD pipelines
+- **Integrate validation** into your development workflow
+- **Automate quality checks** for building energy models, simulations, and structured data
+
+The CLI communicates with your Validibot server's REST API, so you need a running Validibot instance to use it.
 
 ## Features
 
-- **Self-hosted support** - connect to your own Validibot server
-- **Run validations** from the command line or CI/CD pipelines
-- **Workflow support** - reference workflows by ID or human-readable slug
-- **Organization filtering** - disambiguate workflows across orgs and projects
-- **Secure credential storage** - uses system keyring (macOS Keychain, Windows Credential Manager, Linux Secret Service)
-- **CI/CD friendly** - meaningful exit codes and JSON output for scripting
+- **Self-hosted support** — connect to your own Validibot server
+- **Workflow support** — reference workflows by ID or human-readable slug
+- **Organization filtering** — disambiguate workflows across orgs and projects
+- **Secure credential storage** — uses system keyring (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+- **CI/CD friendly** — meaningful exit codes and JSON output for scripting
 
 ## Installation
 
@@ -34,12 +58,13 @@ pipx install validibot-cli
 ### Requirements
 
 - Python 3.10 or later
+- A running [Validibot](https://github.com/danielmcquillen/validibot) server
 
 ## Quick Start
 
 ### 1. Configure Your Server
 
-First, configure the CLI to connect to your Validibot server:
+Point the CLI at your Validibot server:
 
 ```bash
 validibot config set-server https://validibot.your-company.com
@@ -47,7 +72,7 @@ validibot config set-server https://validibot.your-company.com
 
 ### 2. Authenticate
 
-Get your API key from your Validibot server's web interface, then:
+Get your API key from your Validibot server's web interface (Settings → API Key), then:
 
 ```bash
 validibot login
@@ -102,35 +127,35 @@ validibot auth status        # Check if authenticated (no API call)
 3. Stores the key securely in your system keyring
 4. Fetches your organizations and sets a default:
    - If you belong to one org, it becomes your default automatically
-   - If you belong to multiple orgs, you'll be prompted to select one (or skip)
+   - If you belong to multiple orgs, you'll be prompted to select one
 5. Displays your account info to confirm success
 
 **Credential storage:**
 
-The CLI uses your system's secure credential storage:
+| Platform | Storage |
+|----------|---------|
+| macOS | Keychain |
+| Windows | Credential Manager |
+| Linux | Secret Service (GNOME Keyring, KWallet) |
 
-- **macOS**: Keychain
-- **Windows**: Credential Manager
-- **Linux**: Secret Service (GNOME Keyring, KWallet, etc.)
-
-If the system keyring is unavailable, credentials fall back to `~/.config/validibot/credentials.json` with restrictive file permissions (owner read/write only).
+If the system keyring is unavailable, credentials fall back to `~/.config/validibot/credentials.json` with restrictive file permissions.
 
 ### Workflows
 
 ```bash
-validibot workflows list          # List all available workflows
-validibot workflows list --json   # Output as JSON
-validibot workflows show <workflow-id-or-slug>  # Show details of a specific workflow
+validibot workflows list                        # List all available workflows
+validibot workflows list --json                 # Output as JSON
+validibot workflows show <workflow-id-or-slug>  # Show workflow details
 ```
 
-### Runs
+### Validation Runs
 
 ```bash
 validibot runs show <run-id>        # Show run status and results
 validibot runs show <run-id> --json # Output as JSON
 ```
 
-### Validation
+### Running Validations
 
 #### Basic Usage
 
@@ -147,7 +172,7 @@ validibot runs show <run-id>
 
 #### Workflow Selection
 
-Workflows can be specified by **ID** (numeric) or **slug** (human-readable string).
+Workflows can be specified by **ID** (numeric) or **slug** (human-readable string):
 
 ```bash
 # By numeric ID
@@ -157,7 +182,7 @@ validibot validate model.idf -w 123
 validibot validate model.idf -w energyplus-schema-check
 ```
 
-When using slugs, if multiple workflows share the same slug across different organizations or versions, you'll need to disambiguate:
+When using slugs, if multiple workflows share the same slug across different organizations, you'll need to disambiguate:
 
 ```bash
 # Specify organization
@@ -170,37 +195,35 @@ validibot validate model.idf -w my-workflow --org acme-corp --project building-a
 validibot validate model.idf -w my-workflow --org acme-corp --version 2
 ```
 
-If the workflow slug is ambiguous, the CLI will display the matching workflows and prompt you to use filtering options.
-
 #### Output Options
 
 ```bash
 # Verbose output (shows individual step results)
-validibot validate model.idf -w <workflow-id-or-slug> --verbose
+validibot validate model.idf -w <workflow> --verbose
 
 # JSON output (for scripting/CI)
-validibot validate model.idf -w <workflow-id-or-slug> --json
+validibot validate model.idf -w <workflow> --json
 
 # Custom timeout (default: 600 seconds)
-validibot validate model.idf -w <workflow-id-or-slug> --timeout 300
+validibot validate model.idf -w <workflow> --timeout 300
 
 # Name your validation run
-validibot validate model.idf -w <workflow-id-or-slug> --name "nightly-build-check"
+validibot validate model.idf -w <workflow> --name "nightly-build-check"
 ```
 
-#### Full Option Reference
+#### Option Reference
 
-| Option             | Short | Description                             |
-| ------------------ | ----- | --------------------------------------- |
-| `--workflow`       | `-w`  | Workflow ID or slug (required)          |
-| `--org`            | `-o`  | Organization slug (uses default if set) |
-| `--project`        | `-p`  | Project slug for filtering              |
-| `--version`        |       | Workflow version for disambiguation     |
-| `--name`           | `-n`  | Name for this validation run            |
-| `--wait/--no-wait` |       | Wait for completion (default: wait)     |
-| `--timeout`        | `-t`  | Max wait time in seconds (default: 600) |
-| `--verbose`        | `-v`  | Show detailed step-by-step output       |
-| `--json`           | `-j`  | Output results as JSON                  |
+| Option | Short | Description |
+|--------|-------|-------------|
+| `--workflow` | `-w` | Workflow ID or slug (required) |
+| `--org` | `-o` | Organization slug |
+| `--project` | `-p` | Project slug for filtering |
+| `--version` | | Workflow version |
+| `--name` | `-n` | Name for this validation run |
+| `--wait/--no-wait` | | Wait for completion (default: wait) |
+| `--timeout` | `-t` | Max wait time in seconds (default: 600) |
+| `--verbose` | `-v` | Show detailed step-by-step output |
+| `--json` | `-j` | Output results as JSON |
 
 ## Configuration
 
@@ -214,26 +237,15 @@ The CLI determines which server to connect to in this order:
 
 ### Environment Variables
 
-| Variable                           | Description                                | Default |
-| ---------------------------------- | ------------------------------------------ | ------- |
-| `VALIDIBOT_API_URL`                | Server URL (required if not set via CLI)   | -       |
-| `VALIDIBOT_TOKEN`                  | API key (alternative to `validibot login`) | -       |
-| `VALIDIBOT_ORG`                    | Default organization slug                  | -       |
-| `VALIDIBOT_TIMEOUT`                | Request timeout in seconds                 | `300`   |
-| `VALIDIBOT_POLL_INTERVAL`          | Status polling interval in seconds         | `5`     |
-| `VALIDIBOT_NO_KEYRING`             | Disable keyring, use file storage          | `false` |
-| `VALIDIBOT_ALLOW_INSECURE_API_URL` | Allow non-HTTPS API base URL (dangerous)   | `false` |
-
-### Using Environment Variables for CI/CD
-
-For CI/CD pipelines, set the server URL and token via environment variables:
-
-```bash
-export VALIDIBOT_API_URL="https://validibot.your-company.com"
-export VALIDIBOT_TOKEN="your-api-key"
-export VALIDIBOT_ORG="my-org"
-validibot validate model.idf -w my-workflow
-```
+| Variable | Description | Default |
+|----------|-------------|---------|
+| `VALIDIBOT_API_URL` | Server URL | — |
+| `VALIDIBOT_TOKEN` | API key (alternative to `validibot login`) | — |
+| `VALIDIBOT_ORG` | Default organization slug | — |
+| `VALIDIBOT_TIMEOUT` | Request timeout in seconds | `300` |
+| `VALIDIBOT_POLL_INTERVAL` | Status polling interval in seconds | `5` |
+| `VALIDIBOT_NO_KEYRING` | Disable keyring, use file storage | `false` |
+| `VALIDIBOT_ALLOW_INSECURE_API_URL` | Allow non-HTTPS API URL (dangerous) | `false` |
 
 ### Organization Resolution
 
@@ -248,13 +260,13 @@ When `--org` is not explicitly provided, the CLI resolves the organization in th
 
 The `validate` command returns meaningful exit codes for CI/CD integration:
 
-| Code  | Meaning                                                     |
-| ----- | ----------------------------------------------------------- |
-| `0`   | Validation passed                                           |
-| `1`   | Validation failed (`FAIL`) or CLI/API error                 |
-| `2`   | Validation error (`ERROR`/`TIMED_OUT`/`CANCELED`/`UNKNOWN`) |
-| `3`   | Timed out waiting for completion (run still in progress)    |
-| `130` | Interrupted (Ctrl+C)                                        |
+| Code | Meaning |
+|------|---------|
+| `0` | Validation passed |
+| `1` | Validation failed (`FAIL`) or CLI/API error |
+| `2` | Validation error (`ERROR`/`TIMED_OUT`/`CANCELED`) |
+| `3` | Timed out waiting for completion (run still in progress) |
+| `130` | Interrupted (Ctrl+C) |
 
 ## CI/CD Integration
 
@@ -314,11 +326,22 @@ validate:
     VALIDIBOT_TOKEN: $(VALIDIBOT_TOKEN)
 ```
 
+## Part of the Validibot Project
+
+This CLI is one component of the Validibot open-source data validation platform:
+
+| Repository | Description |
+|------------|-------------|
+| **[validibot](https://github.com/danielmcquillen/validibot)** | Core platform — web UI, REST API, workflow engine |
+| **[validibot-cli](https://github.com/danielmcquillen/validibot-cli)** (this repo) | Command-line interface |
+| **[validibot-validators](https://github.com/danielmcquillen/validibot-validators)** | Advanced validator containers (EnergyPlus, FMI) |
+| **[validibot-shared](https://github.com/danielmcquillen/validibot-shared)** | Shared Pydantic models for data interchange |
+
 ## Development
 
 ```bash
 # Clone the repository
-git clone https://github.com/validibot/validibot-cli.git
+git clone https://github.com/danielmcquillen/validibot-cli.git
 cd validibot-cli
 
 # Install with dev dependencies
@@ -343,4 +366,14 @@ uv run mypy src/
 
 ## License
 
-This CLI is open source under the MIT License - see [LICENSE](LICENSE) for details.
+MIT License — see [LICENSE](LICENSE) for details.
+
+---
+
+<div align="center">
+
+[Validibot Platform](https://github.com/danielmcquillen/validibot) •
+[Documentation](https://docs.validibot.com/cli) •
+[Report Issues](https://github.com/danielmcquillen/validibot-cli/issues)
+
+</div>
