@@ -24,6 +24,17 @@
 
 ---
 
+## Part of the Validibot Project
+
+| Repository | Description |
+|------------|-------------|
+| **[validibot](https://github.com/danielmcquillen/validibot)** | Core platform — web UI, REST API, workflow engine |
+| **[validibot-cli](https://github.com/danielmcquillen/validibot-cli)** (this repo) | Command-line interface |
+| **[validibot-validators](https://github.com/danielmcquillen/validibot-validators)** | Advanced validator containers (EnergyPlus, FMI) |
+| **[validibot-shared](https://github.com/danielmcquillen/validibot-shared)** | Shared Pydantic models for data interchange |
+
+---
+
 ## What is Validibot CLI?
 
 Validibot CLI provides command-line access to your Validibot server for automated data validation. Use it to:
@@ -325,17 +336,6 @@ validate:
     VALIDIBOT_API_URL: $(VALIDIBOT_API_URL)
     VALIDIBOT_TOKEN: $(VALIDIBOT_TOKEN)
 ```
-
-## Part of the Validibot Project
-
-This CLI is one component of the Validibot open-source data validation platform:
-
-| Repository | Description |
-|------------|-------------|
-| **[validibot](https://github.com/danielmcquillen/validibot)** | Core platform — web UI, REST API, workflow engine |
-| **[validibot-cli](https://github.com/danielmcquillen/validibot-cli)** (this repo) | Command-line interface |
-| **[validibot-validators](https://github.com/danielmcquillen/validibot-validators)** | Advanced validator containers (EnergyPlus, FMI) |
-| **[validibot-shared](https://github.com/danielmcquillen/validibot-shared)** | Shared Pydantic models for data interchange |
 
 ## Development
 
