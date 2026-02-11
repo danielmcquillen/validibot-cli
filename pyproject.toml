@@ -4,8 +4,8 @@ version = "0.2.0"
 description = "Command-line interface for Validibot - your automated data validation assistant."
 readme = "README.md"
 license = { text = "MIT" }
-authors = [{ name = "Daniel McQuillen", email = "daniel@validibot.com" }]
-maintainers = [{ name = "Daniel McQuillen", email = "daniel@validibot.com" }]
+authors = [{ name = "Daniel McQuillen", email = "daniel@mcquilleninteractive.com" }]
+maintainers = [{ name = "Daniel McQuillen", email = "daniel@mcquilleninteractive.com" }]
 requires-python = ">=3.10"
 keywords = [
     "validation",
