@@ -53,6 +53,11 @@ The CLI communicates with your Validibot server's REST API, so you need a runnin
 - **Secure credential storage** — uses system keyring (macOS Keychain, Windows Credential Manager, Linux Secret Service)
 - **CI/CD friendly** — meaningful exit codes and JSON output for scripting
 
+## Disclaimer
+
+> [!NOTE]
+> This CLI connects to your Validibot server and transmits files for validation. You are solely responsible for the security of your server, the confidentiality of your data, and any costs associated with your infrastructure. API keys should be kept secret — see [Credential storage](#authentication) for details. See the [LICENSE](LICENSE) for full warranty disclaimer.
+
 ## Installation
 
 ```bash

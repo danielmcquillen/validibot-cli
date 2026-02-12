@@ -5,7 +5,7 @@
 If you believe you’ve found a security issue in the Validibot CLI, please report it
 privately so we can investigate and fix it.
 
-- Email: `support@mcquilleninteractive.com`
+- Email: `security@validibot.com`
 - Please include: CLI version, OS, reproduction steps, and any relevant logs (redact API
   keys/tokens).
 
