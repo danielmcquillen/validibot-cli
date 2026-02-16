@@ -82,6 +82,14 @@ uv.lock
 Thumbs.db
 Desktop.ini
 
+# Security — never commit secrets or key material
+*.pem
+*.key
+*.p12
+credentials.json
+service-account.json
+db.sqlite3
+
 # Local development - symlinks to sibling projects
 # (for local development alongside ../validibot)
 vb_shared_dev/
