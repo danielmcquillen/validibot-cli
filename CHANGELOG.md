@@ -12,3 +12,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Pre-commit hooks with TruffleHog secret scanning, detect-private-key, and Ruff linting
 - Dependabot configuration for GitHub Actions and Python dependency updates
 - Hardened .gitignore to exclude key material and credential files
+
+### Changed
+
+- Publish workflow: switched from pip+build to uv build, pinned uv version and all GitHub Actions to commit SHAs
