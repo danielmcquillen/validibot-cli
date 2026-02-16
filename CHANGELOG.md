@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Dependabot configuration for GitHub Actions and Python dependency updates
 - Hardened .gitignore to exclude key material and credential files
 - pip-audit dependency auditing in CI
+- Sigstore attestations for PyPI publish (provenance verification)
 
 ### Changed
 
