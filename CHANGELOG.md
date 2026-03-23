@@ -7,20 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-
-
 ## [0.2.1] - 2026-03-23
+
+### Added
+
+- Pre-commit hooks with TruffleHog secret scanning, detect-private-key, and Ruff linting
+- Dependabot configuration for GitHub Actions and Python dependency updates
+- Hardened .gitignore to exclude key material and credential files
+- pip-audit dependency auditing in CI
+- Sigstore attestations for PyPI publish (provenance verification)
 
 ### Changed
 
+- Publish workflow: switched from pip+build to uv build, pinned uv version and all GitHub Actions to commit SHAs
 - Improved docstrings and comments in validate and workflow commands
 
 ### Fixed
 
-- Enforce HTTPS for stored server URLs (previously only enforced for env var)
-- Graceful error messages instead of tracebacks when no server is configured
+- Enforced HTTPS for stored server URLs, not just `VALIDIBOT_API_URL`
+- Invalid environment-backed configuration now surfaces as clean CLI errors instead of Python tracebacks
+- `config set-server` now honors `VALIDIBOT_ALLOW_INSECURE_API_URL=1` consistently with its help text
 - Ambiguous workflow detection now works for structured API error responses
 - Removed dead `validate status` subcommand; status references now point to `runs show`
+- Workflow and organization listing now follows paginated API responses
+- Pagination links are constrained to the configured API host before being followed
 
 ## [0.2.0] - 2026-01-29
 
@@ -31,11 +41,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Pre-commit hooks with TruffleHog secret scanning, detect-private-key, and Ruff linting
-- Dependabot configuration for GitHub Actions and Python dependency updates
-- Hardened .gitignore to exclude key material and credential files
-- pip-audit dependency auditing in CI
-- Sigstore attestations for PyPI publish (provenance verification)
 - New `validibot config` command group:
   - `set-server <url>` - Configure server URL (required before login)
   - `get-server` - Show current server URL and source
@@ -44,7 +49,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Publish workflow: switched from pip+build to uv build, pinned uv version and all GitHub Actions to commit SHAs
 - README rewritten for self-hosted deployment model
 - CI/CD examples updated to include `VALIDIBOT_API_URL`
 - All commands now check for server configuration before proceeding

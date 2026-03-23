@@ -6,7 +6,7 @@ Provides a clean interface for making authenticated API calls.
 
 from pathlib import Path
 from typing import Any
-from urllib.parse import quote, urlencode
+from urllib.parse import quote, urlencode, urlparse
 
 import httpx
 
@@ -103,6 +103,19 @@ class ValidibotClient:
             self._token = get_stored_token(api_url=self.api_url)
         return self._token
 
+    def _resolve_url(self, path_or_url: str) -> str:
+        """Resolve a request target to a full URL on the configured API host."""
+        parsed = urlparse(path_or_url)
+        if parsed.scheme and parsed.netloc:
+            api = urlparse(self.api_url)
+            if parsed.scheme != api.scheme or parsed.netloc != api.netloc:
+                raise APIError(
+                    "Refusing to follow an API link to a different host.",
+                    detail=path_or_url,
+                )
+            return path_or_url
+        return f"{self.api_url}{path_or_url}"
+
     def _get_headers(self) -> dict[str, str]:
         """Get headers for API requests."""
         headers = {
@@ -174,7 +187,7 @@ class ValidibotClient:
 
     def get(self, path: str, **kwargs: Any) -> Any:
         """Make a GET request."""
-        url = f"{self.api_url}{path}"
+        url = self._resolve_url(path)
         with httpx.Client(timeout=self.timeout) as client:
             try:
                 response = client.get(url, headers=self._get_headers(), **kwargs)
@@ -183,6 +196,44 @@ class ValidibotClient:
             except httpx.RequestError as e:
                 raise APIError("Network error connecting to API.", detail=str(e)) from e
             return self._handle_response(response)
+
+    def _get_paginated_results(self, path: str) -> list[dict[str, Any]]:
+        """Fetch every page from a paginated API endpoint."""
+        items: list[dict[str, Any]] = []
+        next_path: str | None = path
+
+        while next_path is not None:
+            response = self.get(next_path)
+            if isinstance(response, list):
+                items.extend(response)
+                break
+
+            if not isinstance(response, dict) or "results" not in response:
+                raise APIError(
+                    "Unexpected paginated response format.",
+                    detail=str(response)[:200],
+                )
+
+            page_items = response.get("results")
+            if not isinstance(page_items, list):
+                raise APIError(
+                    "Unexpected paginated response format.",
+                    detail="The `results` field was not a list.",
+                )
+            items.extend(page_items)
+
+            next_value = response.get("next")
+            if next_value is None:
+                next_path = None
+            elif isinstance(next_value, str):
+                next_path = next_value
+            else:
+                raise APIError(
+                    "Unexpected paginated response format.",
+                    detail="The `next` field was not a string or null.",
+                )
+
+        return items
 
     def post(
         self,
@@ -269,12 +320,7 @@ class ValidibotClient:
         Returns:
             List of organizations.
         """
-        response = self.get("/api/v1/orgs/")
-        # Handle paginated response
-        if isinstance(response, dict) and "results" in response:
-            items = response["results"]
-        else:
-            items = response
+        items = self._get_paginated_results("/api/v1/orgs/")
         return [Organization.model_validate(org) for org in items]
 
     def list_workflows(self, org: str) -> list[Workflow]:
@@ -289,12 +335,7 @@ class ValidibotClient:
             List of workflows in the organization.
         """
         safe_org = quote(org, safe="")
-        response = self.get(f"/api/v1/orgs/{safe_org}/workflows/")
-        # Handle paginated response
-        if isinstance(response, dict) and "results" in response:
-            items = response["results"]
-        else:
-            items = response
+        items = self._get_paginated_results(f"/api/v1/orgs/{safe_org}/workflows/")
         return [Workflow.model_validate(w) for w in items]
 
     def get_workflow(

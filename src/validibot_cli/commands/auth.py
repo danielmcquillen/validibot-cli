@@ -21,7 +21,11 @@ from validibot_cli.auth import (
     save_token,
 )
 from validibot_cli.client import AuthenticationError, ValidibotClient, get_client
-from validibot_cli.config import ServerNotConfiguredError, get_api_url
+from validibot_cli.config import (
+    InvalidConfigurationError,
+    ServerNotConfiguredError,
+    get_api_url,
+)
 
 app = typer.Typer(no_args_is_help=True)
 console = Console()
@@ -76,6 +80,9 @@ def login(
             style="dim",
             markup=False,
         )
+        raise typer.Exit(1) from None
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
 
     # Prompt for API key if not provided
@@ -204,7 +211,13 @@ def logout() -> None:
     This will log you out of the CLI. You'll need to run 'validibot login'
     again to use commands that require authentication.
     """
-    if not is_authenticated():
+    try:
+        authenticated = is_authenticated()
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
+        raise typer.Exit(1) from None
+
+    if not authenticated:
         err_console.print(
             "You are not currently logged in.", style="yellow", markup=False
         )
@@ -241,8 +254,17 @@ def whoami() -> None:
             markup=False,
         )
         raise typer.Exit(1) from None
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
+        raise typer.Exit(1) from None
 
-    if not is_authenticated():
+    try:
+        authenticated = is_authenticated()
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
+        raise typer.Exit(1) from None
+
+    if not authenticated:
         err_console.print("Not logged in.", style="yellow", markup=False)
         err_console.print(
             "Run 'validibot login' to authenticate.", style="dim", markup=False
@@ -297,8 +319,14 @@ def status() -> None:
     """
     Check authentication status without making an API call.
     """
-    if is_authenticated():
+    try:
+        authenticated = is_authenticated()
         token = get_stored_token()
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
+        raise typer.Exit(1) from None
+
+    if authenticated:
         key_display = _mask_key(token) if token else "none"
         console.print(
             f"Authenticated (API key: {key_display})",

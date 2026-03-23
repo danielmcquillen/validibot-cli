@@ -14,8 +14,10 @@ from validibot_cli.auth import (
     save_server_url,
 )
 from validibot_cli.config import (
+    InvalidConfigurationError,
     ServerNotConfiguredError,
     enforce_https,
+    env_flag_enabled,
     get_api_url,
     normalize_api_url,
 )
@@ -52,7 +54,10 @@ def set_server(
         raise typer.Exit(1) from None
 
     try:
-        enforce_https(normalized, allow_insecure=allow_insecure)
+        allow_insecure_effective = allow_insecure or env_flag_enabled(
+            "VALIDIBOT_ALLOW_INSECURE_API_URL"
+        )
+        enforce_https(normalized, allow_insecure=allow_insecure_effective)
     except ValueError as e:
         err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
@@ -93,6 +98,9 @@ def get_server() -> None:
             style="dim",
             markup=False,
         )
+        raise typer.Exit(1) from None
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
 
     if env_url:

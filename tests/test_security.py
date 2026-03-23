@@ -11,6 +11,7 @@ from unittest.mock import Mock, patch
 import pytest
 from typer.testing import CliRunner
 
+import validibot_cli.config as config_module
 from validibot_cli.client import (
     AmbiguousWorkflowError,
     APIError,
@@ -21,6 +22,14 @@ from validibot_cli.config import ServerNotConfiguredError, enforce_https
 from validibot_cli.main import app
 
 runner = CliRunner()
+
+
+@pytest.fixture(autouse=True)
+def reset_settings_cache():
+    """Reset the global settings cache between tests."""
+    config_module._settings = None
+    yield
+    config_module._settings = None
 
 
 # ── HTTPS enforcement ──────────────────────────────────────────────────
@@ -65,6 +74,16 @@ class TestHttpsEnforcement:
             result = runner.invoke(
                 app,
                 ["config", "set-server", "http://example.com", "--allow-insecure"],
+            )
+        assert result.exit_code == 0
+
+    def test_set_server_accepts_http_with_env_override(self, tmp_path):
+        """config set-server should honor VALIDIBOT_ALLOW_INSECURE_API_URL=1."""
+        with patch("validibot_cli.commands.config.save_server_url"):
+            result = runner.invoke(
+                app,
+                ["config", "set-server", "http://example.com"],
+                env={"VALIDIBOT_ALLOW_INSECURE_API_URL": "1"},
             )
         assert result.exit_code == 0
 
@@ -176,6 +195,33 @@ class TestUnconfiguredServerHandling:
                 result = runner.invoke(app, ["workflows", "list", "--org", "test"])
         assert result.exit_code == 1
         assert "No server configured" in result.output
+
+
+class TestInvalidEnvConfigurationHandling:
+    """Tests that invalid env-backed settings surface clean CLI errors."""
+
+    def test_login_shows_clean_error_for_invalid_env_url(self):
+        result = runner.invoke(
+            app,
+            ["login", "--token", "abc", "--no-verify"],
+            env={
+                "VALIDIBOT_API_URL": "http://example.com",
+                "VALIDIBOT_NO_KEYRING": "1",
+            },
+        )
+        assert result.exit_code == 1
+        assert "Traceback" not in result.output
+        assert "non-HTTPS" in result.output
+
+    def test_config_get_server_shows_clean_error_for_invalid_env_url(self):
+        result = runner.invoke(
+            app,
+            ["config", "get-server"],
+            env={"VALIDIBOT_API_URL": "http://example.com"},
+        )
+        assert result.exit_code == 1
+        assert "Traceback" not in result.output
+        assert "non-HTTPS" in result.output
 
 
 # ── Ambiguous workflow error preservation ──────────────────────────────

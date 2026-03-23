@@ -9,11 +9,12 @@ Note: The CLI intentionally does not auto-load a `.env` file from the current wo
 directory to avoid accidentally using credentials in untrusted repos.
 """
 
+import os
 from pathlib import Path
 from urllib.parse import urlparse
 
 from platformdirs import user_config_dir, user_data_dir
-from pydantic import Field, field_validator, model_validator
+from pydantic import Field, ValidationError, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 # Application name for platformdirs
@@ -21,6 +22,7 @@ APP_NAME = "validibot"
 APP_AUTHOR = "validibot"
 
 _LOCAL_API_HOSTS = {"localhost", "127.0.0.1", "::1"}
+_TRUE_VALUES = {"1", "true", "yes", "on"}
 
 
 def normalize_api_url(api_url: str) -> str:
@@ -76,6 +78,11 @@ def enforce_https(url: str, *, allow_insecure: bool = False) -> None:
             "Use --allow-insecure (or set VALIDIBOT_ALLOW_INSECURE_API_URL=1) "
             "to override."
         )
+
+
+def env_flag_enabled(name: str) -> bool:
+    """Check whether an environment variable is set to a truthy value."""
+    return os.environ.get(name, "").strip().lower() in _TRUE_VALUES
 
 
 def get_config_dir() -> Path:
@@ -178,11 +185,31 @@ class Settings(BaseSettings):
 _settings: Settings | None = None
 
 
+class InvalidConfigurationError(Exception):
+    """Raised when environment-backed settings are invalid."""
+
+    pass
+
+
+def _format_settings_error(error: ValidationError) -> str:
+    errors = error.errors()
+    if not errors:
+        return str(error)
+
+    message = str(errors[0].get("msg", str(error)))
+    if message.startswith("Value error, "):
+        return message.removeprefix("Value error, ")
+    return message
+
+
 def get_settings() -> Settings:
     """Get the global settings instance."""
     global _settings
     if _settings is None:
-        _settings = Settings()
+        try:
+            _settings = Settings()
+        except ValidationError as error:
+            raise InvalidConfigurationError(_format_settings_error(error)) from error
     return _settings
 
 
@@ -202,8 +229,6 @@ def get_api_url() -> str:
     Raises:
         ServerNotConfiguredError: If no server URL is configured.
     """
-    import os
-
     # Environment variable takes precedence (handled by Settings)
     env_url = os.environ.get("VALIDIBOT_API_URL")
     if env_url:

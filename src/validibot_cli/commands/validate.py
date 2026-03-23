@@ -22,7 +22,11 @@ from validibot_cli.client import (
     ValidibotClient,
     get_client,
 )
-from validibot_cli.config import ServerNotConfiguredError, get_settings
+from validibot_cli.config import (
+    InvalidConfigurationError,
+    ServerNotConfiguredError,
+    get_settings,
+)
 from validibot_cli.models import (
     FindingSeverity,
     ValidationRun,
@@ -44,7 +48,11 @@ def _resolve_org(org: str | None) -> str:
     if org:
         return org
 
-    default_org = get_default_org()
+    try:
+        default_org = get_default_org()
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
+        raise typer.Exit(1) from None
     if default_org:
         return default_org
 
@@ -422,6 +430,9 @@ def run(
             style="dim",
             markup=False,
         )
+        raise typer.Exit(1) from None
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
     except Exception as e:
         err_console.print(f"Error: {e}", style="red", markup=False)

@@ -10,7 +10,7 @@ from rich.console import Console
 from validibot_cli.auth import get_default_org
 from validibot_cli.client import APIError, AuthenticationError, get_client
 from validibot_cli.commands.validate import _display_run_result
-from validibot_cli.config import ServerNotConfiguredError
+from validibot_cli.config import InvalidConfigurationError, ServerNotConfiguredError
 
 
 def _resolve_org(org: str | None) -> str:
@@ -18,7 +18,11 @@ def _resolve_org(org: str | None) -> str:
     if org:
         return org
 
-    default_org = get_default_org()
+    try:
+        default_org = get_default_org()
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
+        raise typer.Exit(1) from None
     if default_org:
         return default_org
 
@@ -90,6 +94,9 @@ def show(
             style="dim",
             markup=False,
         )
+        raise typer.Exit(1) from None
+    except InvalidConfigurationError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)

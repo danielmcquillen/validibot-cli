@@ -1,11 +1,11 @@
 """Tests for the HTTP client."""
 
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 import httpx
 import pytest
 
-from validibot_cli.client import AuthenticationError, ValidibotClient
+from validibot_cli.client import APIError, AuthenticationError, ValidibotClient
 from validibot_cli.models import User
 
 
@@ -92,3 +92,58 @@ class TestValidibotClient:
                 with patch.object(httpx.Client, "__exit__", return_value=None):
                     with pytest.raises(AuthenticationError):
                         client.get_current_user()
+
+    def test_list_user_orgs_follows_pagination(self):
+        """Paginated org responses should be fetched until `next` is null."""
+        client = ValidibotClient(token="test-token", api_url="https://api.example.com")
+
+        responses = [
+            {
+                "results": [{"slug": "org-one", "name": "Org One"}],
+                "next": "https://api.example.com/api/v1/orgs/?page=2",
+            },
+            {
+                "results": [{"slug": "org-two", "name": "Org Two"}],
+                "next": None,
+            },
+        ]
+
+        with patch.object(ValidibotClient, "get", side_effect=responses) as mock_get:
+            orgs = client.list_user_orgs()
+
+        assert [org.slug for org in orgs] == ["org-one", "org-two"]
+        assert mock_get.call_args_list == [
+            call("/api/v1/orgs/"),
+            call("https://api.example.com/api/v1/orgs/?page=2"),
+        ]
+
+    def test_list_workflows_follows_pagination(self):
+        """Paginated workflow responses should include every page."""
+        client = ValidibotClient(token="test-token", api_url="https://api.example.com")
+
+        responses = [
+            {
+                "results": [{"id": "1", "slug": "wf-one", "name": "Workflow One"}],
+                "next": "https://api.example.com/api/v1/orgs/demo/workflows/?page=2",
+            },
+            {
+                "results": [{"id": "2", "slug": "wf-two", "name": "Workflow Two"}],
+                "next": None,
+            },
+        ]
+
+        with patch.object(ValidibotClient, "get", side_effect=responses) as mock_get:
+            workflows = client.list_workflows("demo")
+
+        assert [workflow.slug for workflow in workflows] == ["wf-one", "wf-two"]
+        assert mock_get.call_args_list == [
+            call("/api/v1/orgs/demo/workflows/"),
+            call("https://api.example.com/api/v1/orgs/demo/workflows/?page=2"),
+        ]
+
+    def test_get_rejects_absolute_url_to_different_host(self):
+        """Absolute URLs must stay on the configured API origin."""
+        client = ValidibotClient(token="test-token", api_url="https://api.example.com")
+
+        with pytest.raises(APIError, match="different host"):
+            client.get("https://evil.example.com/api/v1/orgs/")
