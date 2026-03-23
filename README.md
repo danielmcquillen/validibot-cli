@@ -30,7 +30,7 @@
 |------------|-------------|
 | **[validibot](https://github.com/danielmcquillen/validibot)** | Core platform — web UI, REST API, workflow engine |
 | **[validibot-cli](https://github.com/danielmcquillen/validibot-cli)** (this repo) | Command-line interface |
-| **[validibot-validators](https://github.com/danielmcquillen/validibot-validators)** | Advanced validator containers (EnergyPlus, FMI) |
+| **[validibot-validators](https://github.com/danielmcquillen/validibot-validators)** | Advanced validator containers (EnergyPlus™, FMI) |
 | **[validibot-shared](https://github.com/danielmcquillen/validibot-shared)** | Shared Pydantic models for data interchange |
 
 ---

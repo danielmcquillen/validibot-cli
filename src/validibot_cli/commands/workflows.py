@@ -146,7 +146,7 @@ def list_workflows(
     console.print()
     console.print(f"[dim]Found {len(workflows)} workflow(s)[/dim]")
     console.print(
-        "[dim]Use slug or ID with 'validibot workflows show' or 'validibot validate run'[/dim]"
+        "[dim]Use slug or ID with 'validibot workflows show' or 'validibot validate'[/dim]"
     )
 
 

@@ -398,10 +398,10 @@ def run(
 
     [bold]Examples:[/bold]
 
-        validibot validate run model.idf -w my-workflow --org my-org
-        validibot validate run model.idf -w my-workflow -o my-org --version 2
-        validibot validate run model.idf -w my-workflow -o my-org -p my-project
-        validibot validate run model.fmu -w my-workflow -o my-org --no-wait
+        validibot validate model.idf -w my-workflow --org my-org
+        validibot validate model.idf -w my-workflow -o my-org --version 2
+        validibot validate model.idf -w my-workflow -o my-org -p my-project
+        validibot validate model.fmu -w my-workflow -o my-org --no-wait
     """
     # Resolve org (use default if not provided)
     resolved_org = _resolve_org(org)
