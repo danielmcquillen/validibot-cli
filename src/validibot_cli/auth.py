@@ -15,6 +15,7 @@ from urllib.parse import urlparse
 from rich.console import Console
 
 from validibot_cli.config import (
+    ServerNotConfiguredError,
     ensure_config_dir,
     get_api_url,
     get_settings,
@@ -53,9 +54,17 @@ def _use_keyring() -> bool:
         return False
 
 
-def _get_host_key(api_url: str | None = None) -> str:
-    """Get the host[:port] identifier for a given api_url (used for token scoping)."""
-    normalized = normalize_api_url(api_url or get_api_url())
+def _get_host_key(api_url: str | None = None) -> str | None:
+    """Get the host[:port] identifier for a given api_url (used for token scoping).
+
+    Returns None if no server URL is available (no env var, no stored config).
+    Raises ValueError if the URL is present but invalid.
+    """
+    try:
+        raw_url = api_url or get_api_url()
+    except ServerNotConfiguredError:
+        return None
+    normalized = normalize_api_url(raw_url)
     parsed = urlparse(normalized)
     host_key = (parsed.netloc or "").lower()
     if not host_key:
@@ -107,6 +116,10 @@ def save_token(token: str, api_url: str | None = None) -> None:
     Uses system keyring if available, falls back to file storage.
     """
     host_key = _get_host_key(api_url)
+    if host_key is None:
+        raise ServerNotConfiguredError(
+            "No server configured. Run 'validibot config set-server <url>' first."
+        )
 
     if _use_keyring():
         try:
@@ -155,6 +168,8 @@ def get_stored_token(api_url: str | None = None) -> str | None:
         return env_token
 
     host_key = _get_host_key(api_url)
+    if host_key is None:
+        return None
 
     # Try keyring
     if _use_keyring():
@@ -191,6 +206,8 @@ def delete_token(api_url: str | None = None) -> bool:
     Returns True if a token was deleted, False if none was stored.
     """
     host_key = _get_host_key(api_url)
+    if host_key is None:
+        return False
     deleted = False
 
     # Try to delete from keyring
@@ -251,6 +268,10 @@ def save_default_org(org_slug: str, api_url: str | None = None) -> None:
         api_url: API URL to scope the default org to.
     """
     host_key = _get_host_key(api_url)
+    if host_key is None:
+        raise ServerNotConfiguredError(
+            "No server configured. Run 'validibot config set-server <url>' first."
+        )
     token_file = _get_token_file()
     data = _load_token_file(token_file)
 
@@ -290,6 +311,8 @@ def get_default_org(api_url: str | None = None) -> str | None:
         return env_org
 
     host_key = _get_host_key(api_url)
+    if host_key is None:
+        return None
     token_file = _get_token_file()
 
     if token_file.exists():
@@ -313,6 +336,8 @@ def delete_default_org(api_url: str | None = None) -> bool:
     Returns True if a default org was deleted, False if none was stored.
     """
     host_key = _get_host_key(api_url)
+    if host_key is None:
+        return False
     token_file = _get_token_file()
 
     if not token_file.exists():

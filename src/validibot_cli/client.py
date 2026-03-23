@@ -24,10 +24,12 @@ class APIError(Exception):
         message: str,
         status_code: int | None = None,
         detail: str | None = None,
+        response_data: dict[str, Any] | None = None,
     ):
         self.message = message
         self.status_code = status_code
         self.detail = detail
+        self.response_data = response_data
         super().__init__(message)
 
 
@@ -59,25 +61,19 @@ def _check_ambiguous_workflow_error(error: APIError) -> None:
     """
     Check if an APIError represents an ambiguous workflow lookup.
 
-    Raises AmbiguousWorkflowError if the error contains workflow match info,
-    otherwise does nothing (caller should re-raise the original error).
+    Inspects the preserved response_data dict for a ``matches`` key.
+    Raises AmbiguousWorkflowError if found, otherwise does nothing
+    (caller should re-raise the original error).
     """
-    if error.status_code != 400 or not error.detail:
+    if error.status_code != 400:
         return
 
-    import json
-
-    try:
-        error_data = (
-            json.loads(error.detail) if isinstance(error.detail, str) else error.detail
-        )
-        if isinstance(error_data, dict) and "matches" in error_data:
-            raise AmbiguousWorkflowError(
-                error_data.get("detail", str(error)),
-                matches=error_data.get("matches", []),
-            ) from error
-    except json.JSONDecodeError:
-        pass
+    data = error.response_data
+    if isinstance(data, dict) and "matches" in data:
+        raise AmbiguousWorkflowError(
+            data.get("detail", str(error)),
+            matches=data.get("matches", []),
+        ) from error
 
 
 class ValidibotClient:
@@ -145,11 +141,18 @@ class ValidibotClient:
             )
 
         if response.status_code >= 400:
-            # Try to extract error detail from response
+            # Try to extract error detail from response, preserving
+            # the full structured body for higher-level error inspection
+            # (e.g. AmbiguousWorkflowError needs the `matches` field).
             detail = None
+            response_data = None
             try:
                 data = response.json()
-                detail = data.get("detail") or data.get("error") or str(data)
+                if isinstance(data, dict):
+                    response_data = data
+                    detail = data.get("detail") or data.get("error") or str(data)
+                else:
+                    detail = str(data)
             except Exception:
                 detail = response.text[:200] if response.text else None
 
@@ -157,6 +160,7 @@ class ValidibotClient:
                 f"API error (HTTP {response.status_code})",
                 status_code=response.status_code,
                 detail=detail,
+                response_data=response_data,
             )
 
         # Success - return JSON or None

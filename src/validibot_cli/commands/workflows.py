@@ -13,6 +13,7 @@ from rich.table import Table
 
 from validibot_cli.auth import get_default_org
 from validibot_cli.client import APIError, AuthenticationError, get_client
+from validibot_cli.config import ServerNotConfiguredError
 
 
 def _resolve_org(org: str | None) -> str:
@@ -90,6 +91,16 @@ def list_workflows(
     try:
         client = get_client()
         workflows = client.list_workflows(org=resolved_org)
+    except ServerNotConfiguredError:
+        err_console.print(
+            "Error: No server configured.", style="red", markup=False
+        )
+        err_console.print(
+            "Run 'validibot config set-server <url>' first.",
+            style="dim",
+            markup=False,
+        )
+        raise typer.Exit(1) from None
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None
@@ -187,6 +198,16 @@ def show(
     try:
         client = get_client()
         workflow = client.get_workflow(workflow_id, org=resolved_org)
+    except ServerNotConfiguredError:
+        err_console.print(
+            "Error: No server configured.", style="red", markup=False
+        )
+        err_console.print(
+            "Run 'validibot config set-server <url>' first.",
+            style="dim",
+            markup=False,
+        )
+        raise typer.Exit(1) from None
     except AuthenticationError as e:
         err_console.print(e.message, style="red", markup=False)
         raise typer.Exit(1) from None

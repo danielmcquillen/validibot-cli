@@ -22,7 +22,7 @@ from validibot_cli.client import (
     ValidibotClient,
     get_client,
 )
-from validibot_cli.config import get_settings
+from validibot_cli.config import ServerNotConfiguredError, get_settings
 from validibot_cli.models import (
     FindingSeverity,
     ValidationRun,
@@ -264,7 +264,7 @@ def _wait_for_completion(
                 err_console.print("Timeout waiting for validation.", style="yellow")
                 err_console.print(f"Run ID: {run_id}", style="dim", markup=False)
                 err_console.print(
-                    f"Check status with: validibot validate status {run_id} --org {org}",
+                    f"Check status with: validibot runs show {run_id} --org {org}",
                     style="dim",
                     markup=False,
                 )
@@ -297,7 +297,7 @@ def _wait_for_completion(
                 err_console.print("Timeout waiting for validation.", style="yellow")
                 err_console.print(f"Run ID: {run_id}", style="dim", markup=False)
                 err_console.print(
-                    f"Check status with: validibot validate status {run_id} --org {org}",
+                    f"Check status with: validibot runs show {run_id} --org {org}",
                     style="dim",
                     markup=False,
                 )
@@ -413,6 +413,16 @@ def run(
 
     try:
         client = get_client()
+    except ServerNotConfiguredError:
+        err_console.print(
+            "Error: No server configured.", style="red", markup=False
+        )
+        err_console.print(
+            "Run 'validibot config set-server <url>' first.",
+            style="dim",
+            markup=False,
+        )
+        raise typer.Exit(1) from None
     except Exception as e:
         err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
@@ -472,7 +482,7 @@ def run(
             console.print()
             console.print(f"Run ID: {run_id}", style="dim", markup=False)
             console.print(
-                f"Check status with: validibot validate status {run_id} --org {resolved_org}",
+                f"Check status with: validibot runs show {run_id} --org {resolved_org}",
                 style="dim",
                 markup=False,
             )
@@ -523,69 +533,3 @@ def run(
         raise typer.Exit(2)
     else:
         raise typer.Exit(2)
-
-
-@app.command(name="status")
-def status(
-    run_id: Annotated[
-        str,
-        typer.Argument(help="Validation run ID"),
-    ],
-    org: Annotated[
-        str | None,
-        typer.Option(
-            "--org",
-            "-o",
-            help="Organization slug (uses default if set)",
-        ),
-    ] = None,
-    json_output: Annotated[
-        bool,
-        typer.Option(
-            "--json",
-            "-j",
-            help="Output as JSON",
-        ),
-    ] = False,
-    verbose: Annotated[
-        bool,
-        typer.Option(
-            "--verbose",
-            "-v",
-            help="Show detailed output",
-        ),
-    ] = False,
-) -> None:
-    """
-    Check the status of a validation run.
-
-    [bold]Examples:[/bold]
-
-        validibot validate status abc123 --org my-org
-        validibot validate status abc123 -o my-org --json
-    """
-    # Resolve org (use default if not provided)
-    resolved_org = _resolve_org(org)
-
-    try:
-        client = get_client()
-        run_data = client.get_validation_run(run_id, org=resolved_org)
-    except AuthenticationError as e:
-        err_console.print(e.message, style="red", markup=False)
-        raise typer.Exit(1) from None
-    except APIError as e:
-        if e.status_code == 404:
-            err_console.print(f"Run not found: {run_id}", style="red", markup=False)
-        else:
-            err_console.print(f"Error: {e.message}", style="red", markup=False)
-        raise typer.Exit(1) from None
-    except Exception as e:
-        err_console.print(f"Error: {e}", style="red", markup=False)
-        raise typer.Exit(1) from None
-
-    if json_output:
-        import json
-
-        typer.echo(json.dumps(run_data.model_dump(mode="json"), indent=2))
-    else:
-        _display_run_result(run_data, verbose=verbose)

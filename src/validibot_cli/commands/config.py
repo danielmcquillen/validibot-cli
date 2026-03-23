@@ -15,6 +15,7 @@ from validibot_cli.auth import (
 )
 from validibot_cli.config import (
     ServerNotConfiguredError,
+    enforce_https,
     get_api_url,
     normalize_api_url,
 )
@@ -30,6 +31,11 @@ def set_server(
         ...,
         help="Server URL (e.g., https://validibot.mycompany.com)",
     ),
+    allow_insecure: bool = typer.Option(
+        False,
+        "--allow-insecure",
+        help="Allow non-HTTPS URLs (dangerous; use only for local development)",
+    ),
 ) -> None:
     """
     Set the Validibot server URL.
@@ -41,6 +47,12 @@ def set_server(
     """
     try:
         normalized = normalize_api_url(url)
+    except ValueError as e:
+        err_console.print(f"Error: {e}", style="red", markup=False)
+        raise typer.Exit(1) from None
+
+    try:
+        enforce_https(normalized, allow_insecure=allow_insecure)
     except ValueError as e:
         err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None

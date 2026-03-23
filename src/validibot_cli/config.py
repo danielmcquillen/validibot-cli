@@ -54,6 +54,30 @@ def normalize_api_url(api_url: str) -> str:
     return f"{scheme}://{netloc}"
 
 
+def enforce_https(url: str, *, allow_insecure: bool = False) -> None:
+    """Reject non-HTTPS URLs unless they target localhost or allow_insecure is set.
+
+    This is the single enforcement point used by both the env-var path
+    (via Settings._enforce_https_api_url) and the stored-config path
+    (via get_api_url / save_server_url).
+
+    Raises:
+        ValueError: If the URL is non-HTTPS and not exempted.
+    """
+    parsed = urlparse(url)
+    host = parsed.hostname or ""
+    if (
+        parsed.scheme != "https"
+        and not allow_insecure
+        and host not in _LOCAL_API_HOSTS
+    ):
+        raise ValueError(
+            "Refusing to use a non-HTTPS server URL. "
+            "Use --allow-insecure (or set VALIDIBOT_ALLOW_INSECURE_API_URL=1) "
+            "to override."
+        )
+
+
 def get_config_dir() -> Path:
     """Get the configuration directory path.
 
@@ -146,17 +170,7 @@ class Settings(BaseSettings):
     def _enforce_https_api_url(self) -> "Settings":
         if self.api_url is None:
             return self
-        parsed = urlparse(self.api_url)
-        host = parsed.hostname or ""
-        if (
-            parsed.scheme != "https"
-            and not self.allow_insecure_api_url
-            and host not in _LOCAL_API_HOSTS
-        ):
-            raise ValueError(
-                "Refusing to use a non-HTTPS VALIDIBOT_API_URL. "
-                "Set VALIDIBOT_ALLOW_INSECURE_API_URL=1 to override."
-            )
+        enforce_https(self.api_url, allow_insecure=self.allow_insecure_api_url)
         return self
 
 
@@ -204,6 +218,8 @@ def get_api_url() -> str:
 
     stored_url = get_stored_server_url()
     if stored_url:
+        settings = get_settings()
+        enforce_https(stored_url, allow_insecure=settings.allow_insecure_api_url)
         return stored_url
 
     # No server configured
