@@ -4,6 +4,20 @@ Token storage and authentication utilities.
 Tokens are stored securely using the system keyring (macOS Keychain,
 Windows Credential Manager, Linux Secret Service). Falls back to
 a file-based store if keyring is unavailable.
+
+**Security note on file-based fallback:**
+
+When the system keyring is unavailable (headless servers, containers,
+CI environments), tokens are stored as plaintext JSON in
+``~/.config/validibot/credentials.json`` with ``chmod 0600`` permissions.
+This matches the pattern used by other CLI tools (``kubectl``, ``gh``,
+``gcloud``), but users should be aware:
+
+- The file is readable by the owning user and root.
+- Backup tools and disk images may capture the file.
+- Set ``VALIDIBOT_TOKEN`` env var in CI/CD instead of persisting tokens.
+- Set ``VALIDIBOT_NO_KEYRING=1`` to explicitly opt in to file storage
+  (suppresses the fallback warning).
 """
 
 import json
@@ -135,7 +149,22 @@ def save_token(token: str, api_url: str | None = None) -> None:
             )
             console.print("Falling back to file storage.", style="dim", markup=False)
 
-    # Fallback to file storage
+    # Fallback to file storage.
+    # If the user hasn't explicitly opted in (VALIDIBOT_NO_KEYRING=1),
+    # warn them about the security implications of plaintext storage.
+    if not os.environ.get("VALIDIBOT_NO_KEYRING", "").lower() in ("1", "true", "yes"):
+        console.print(
+            "\n[yellow bold]⚠ Security notice:[/yellow bold] System keyring is "
+            "unavailable. Your API token will be stored as plaintext in:",
+            markup=True,
+        )
+        console.print(f"  {_get_token_file()}", style="dim", markup=False)
+        console.print(
+            "To suppress this warning, set VALIDIBOT_NO_KEYRING=1.\n"
+            "For CI/CD, use VALIDIBOT_TOKEN env var instead of persisting tokens.",
+            style="dim",
+            markup=False,
+        )
     token_file = _get_token_file()
     data = _load_token_file(token_file)
 

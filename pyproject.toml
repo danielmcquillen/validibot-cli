@@ -1,6 +1,6 @@
 [project]
 name = "validibot-cli"
-version = "0.2.1"
+version = "0.2.2"
 description = "Command-line interface for Validibot - your automated data validation assistant."
 readme = "README.md"
 license = { text = "MIT" }
