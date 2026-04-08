@@ -152,7 +152,7 @@ def save_token(token: str, api_url: str | None = None) -> None:
     # Fallback to file storage.
     # If the user hasn't explicitly opted in (VALIDIBOT_NO_KEYRING=1),
     # warn them about the security implications of plaintext storage.
-    if not os.environ.get("VALIDIBOT_NO_KEYRING", "").lower() in ("1", "true", "yes"):
+    if os.environ.get("VALIDIBOT_NO_KEYRING", "").lower() not in ("1", "true", "yes"):
         console.print(
             "\n[yellow bold]⚠ Security notice:[/yellow bold] System keyring is "
             "unavailable. Your API token will be stored as plaintext in:",
