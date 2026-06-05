@@ -4,6 +4,7 @@ HTTP client for Validibot API.
 Provides a clean interface for making authenticated API calls.
 """
 
+import json
 from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlencode, urlparse
@@ -389,6 +390,8 @@ class ValidibotClient:
         name: str | None = None,
         version: str | None = None,
         project: str | None = None,
+        metadata: dict[str, str] | None = None,
+        short_description: str | None = None,
     ) -> ValidationRun:
         """Start a validation run by uploading a file.
 
@@ -402,6 +405,13 @@ class ValidibotClient:
             name: Optional name for this validation run.
             version: Workflow version for disambiguation.
             project: Project slug for filtering within an organization.
+            metadata: Optional submission metadata (key/value). Readable in
+                rules as ``submission.metadata.<key>`` (ADR-2026-06-03b). Sent
+                as a JSON string in the multipart form; the API persists it on
+                the submission (trusted-setter path — not gated by the
+                workflow's ``allow_submission_*`` flags).
+            short_description: Optional short description for the run. Readable
+                in rules as ``submission.short_description``.
 
         Returns:
             The created validation run.
@@ -426,6 +436,12 @@ class ValidibotClient:
         extra_data: dict[str, str] = {}
         if name:
             extra_data["name"] = name
+        # metadata is sent as a JSON string; the API serializer coerces it back
+        # to a dict (it accepts a JSON string on the multipart path).
+        if metadata:
+            extra_data["metadata"] = json.dumps(metadata)
+        if short_description:
+            extra_data["short_description"] = short_description
 
         try:
             data = self.upload_file(

@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-06-06
+
+### Added
+
+- `validibot validate` now accepts `--meta key=value` (repeatable) and
+  `--short-description`, carrying submission metadata and a run description from
+  the CLI. These back the `submission.metadata.*` and
+  `submission.short_description` assertion namespace (ADR-2026-06-03b), so a
+  `submission.*` rule fires regardless of launch path — matching the REST API,
+  which already accepts these. The CLI is a trusted-setter path: values are sent
+  as multipart form fields and persisted ungated. Metadata is parsed from
+  `key=value` pairs (only the first `=` splits) into a JSON field; malformed
+  pairs fail fast with a clear message.
+
+### Fixed
+
+- README: corrected a stale repo name (`validibot-validators` →
+  `validibot-validator-backends`).
+
 ## [0.2.2] - 2026-04-08
 
 - Add note about file-based fallback

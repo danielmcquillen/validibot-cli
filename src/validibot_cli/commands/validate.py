@@ -74,6 +74,32 @@ console = Console()
 err_console = Console(stderr=True)
 
 
+def _parse_meta_options(pairs: list[str] | None) -> dict[str, str] | None:
+    """Parse repeated ``--meta key=value`` options into a dict.
+
+    Each entry must be ``key=value``; only the first ``=`` splits, so the value
+    may itself contain ``=``. A malformed entry exits with a clear message so
+    the user gets immediate feedback instead of an opaque server-side error.
+    Returns ``None`` when no ``--meta`` options were given, so the request omits
+    the field entirely rather than sending an empty map.
+    """
+    if not pairs:
+        return None
+    result: dict[str, str] = {}
+    for raw in pairs:
+        key, sep, value = raw.partition("=")
+        key = key.strip()
+        if not sep or not key:
+            err_console.print(
+                f"Error: --meta expects key=value, got: {raw}",
+                style="red",
+                markup=False,
+            )
+            raise typer.Exit(1)
+        result[key] = value
+    return result
+
+
 def _format_status(status: str) -> str:
     """Format a validation status for display."""
     status_colors = {
@@ -363,6 +389,27 @@ def run(
             help="Optional name for this validation run",
         ),
     ] = None,
+    meta: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--meta",
+            help=(
+                "Submission metadata as key=value (repeatable), e.g. "
+                "--meta deliverable=handover. Readable in rules as "
+                "submission.metadata.<key>."
+            ),
+        ),
+    ] = None,
+    short_description: Annotated[
+        str | None,
+        typer.Option(
+            "--short-description",
+            help=(
+                "Short description for this run, readable in rules as "
+                "submission.short_description."
+            ),
+        ),
+    ] = None,
     wait: Annotated[
         bool,
         typer.Option(
@@ -438,6 +485,10 @@ def run(
         err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
 
+    # Parse --meta key=value pairs into a dict before uploading, so a malformed
+    # entry fails fast with a clear message rather than an opaque server error.
+    metadata = _parse_meta_options(meta)
+
     # Start the validation
     err_console.print(f"Uploading {file.name}...", style="dim", markup=False)
 
@@ -449,6 +500,8 @@ def run(
             name=name,
             project=project,
             version=version,
+            metadata=metadata,
+            short_description=short_description,
         )
     except AmbiguousWorkflowError as e:
         err_console.print(f"Error: {e.message}", style="red", markup=False)
