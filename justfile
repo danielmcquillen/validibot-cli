@@ -71,8 +71,11 @@ release VERSION:
 
     echo "Releasing v{{VERSION}}..."
 
-    # Create and push tag
-    git tag "v{{VERSION}}"
+    # Create and push tag.
+    # -m supplies the annotation message inline so the editor never opens.
+    # With tag.gpgsign=true this stays a signed tag (provenance) but is
+    # non-interactive; without -m, git opens core.editor for the message.
+    git tag -m "Release v{{VERSION}}" "v{{VERSION}}"
     git push origin "v{{VERSION}}"
 
     # Create GitHub release (triggers PyPI publish via Actions)
