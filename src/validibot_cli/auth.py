@@ -103,7 +103,16 @@ def _load_token_file(token_file: Path) -> dict[str, object]:
 
 def _write_token_file(token_file: Path, data: dict[str, object]) -> None:
     tmp_file = token_file.with_name(f"{token_file.name}.tmp")
-    fd = os.open(tmp_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+    # O_NOFOLLOW refuses to open the temp path if it is a symlink, so a local
+    # attacker who can write into the config dir can't pre-plant
+    # ``credentials.json.tmp`` as a symlink and redirect the token write to an
+    # arbitrary file. (Unix only; 0 on platforms without it, e.g. Windows.)
+    nofollow = getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(
+        tmp_file,
+        os.O_WRONLY | os.O_CREAT | os.O_TRUNC | nofollow,
+        0o600,
+    )
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
             json.dump(data, f)

@@ -62,9 +62,7 @@ class TestHttpsEnforcement:
     def test_set_server_rejects_http_remote(self, tmp_path):
         """validibot config set-server must reject http:// for non-localhost."""
         with patch("validibot_cli.commands.config.save_server_url"):
-            result = runner.invoke(
-                app, ["config", "set-server", "http://example.com"]
-            )
+            result = runner.invoke(app, ["config", "set-server", "http://example.com"])
         assert result.exit_code == 1
         assert "non-HTTPS" in result.output
 
@@ -278,9 +276,7 @@ class TestAmbiguousWorkflowError:
 
     def test_handle_response_preserves_response_data(self):
         """_handle_response should preserve the full JSON body in response_data."""
-        client = ValidibotClient(
-            token="test-token", api_url="https://api.example.com"
-        )
+        client = ValidibotClient(token="test-token", api_url="https://api.example.com")
 
         mock_response = Mock()
         mock_response.status_code = 400
@@ -316,3 +312,90 @@ class TestValidateStatusRedirect:
         importlib.reload(validate)
         source = inspect.getsource(validate)
         assert "validate status" not in source
+
+
+# ── Terminal escape-sequence sanitization ──────────────────────────────
+# API responses are attacker-influenced. Rich's escape()/markup=False only
+# neutralize Rich's [tag] markup, NOT terminal ANSI/OSC control sequences. A
+# hostile server could otherwise recolor output to spoof a "PASSED", move the
+# cursor, rewrite the window title, or overwrite a line with \r. Server strings
+# must therefore be stripped of control bytes before display.
+
+
+class TestTerminalOutputSanitization:
+    """The output sanitizer strips terminal control bytes from server text."""
+
+    def test_strips_ansi_escape_sequences(self):
+        """ESC-introduced ANSI sequences (color/cursor) are removed."""
+        from validibot_cli.safe_output import strip_control_chars
+
+        out = strip_control_chars("PASSED\x1b[31m FAILED\x1b[0m")
+        assert "\x1b" not in out
+        # ESC removed; the remaining bracket text is now inert literal characters.
+        assert out == "PASSED[31m FAILED[0m"
+
+    def test_strips_carriage_return_and_c1_csi(self):
+        """\\r (line-overwrite spoofing) and the 8-bit C1 CSI are removed."""
+        from validibot_cli.safe_output import strip_control_chars
+
+        assert "\r" not in strip_control_chars("real\rspoofed")
+        assert "\x9b" not in strip_control_chars("x\x9b31m")  # C1 CSI
+        assert "\x07" not in strip_control_chars("bell\x07")  # BEL
+
+    def test_preserves_newlines_and_tabs(self):
+        """Legitimate whitespace in multi-line messages is kept."""
+        from validibot_cli.safe_output import strip_control_chars
+
+        assert strip_control_chars("line1\nline2\tcol") == "line1\nline2\tcol"
+
+    def test_safe_markup_strips_control_and_escapes_rich(self):
+        """safe_markup removes control bytes AND escapes Rich markup.
+
+        Both layers must be defended: the ANSI layer (ESC) and Rich's own
+        ``[tag]`` layer. A server string carrying both must come out inert.
+        """
+        from validibot_cli.safe_output import safe_markup
+
+        out = safe_markup("\x1b[31m[bold]danger[/bold]")
+        assert "\x1b" not in out  # ANSI control stripped
+        # Rich markup is escaped (``[bold]`` -> ``\[bold]``), so Rich renders it
+        # literally instead of interpreting it. The escaped backslash form is
+        # the proof; note ``[bold]`` still appears as a substring of ``\[bold]``,
+        # which is why we assert the escaped form rather than its absence.
+        assert "\\[bold]" in out
+        assert "\\[/bold]" in out
+
+    def test_workflow_sanitize_applies_the_guard(self):
+        """The workflows command's _sanitize routes through the shared guard."""
+        from validibot_cli.commands.workflows import _sanitize
+
+        # OSC title-set (\x1b]0;…\x07) + Rich markup: both must be neutralized.
+        out = _sanitize("\x1b]0;pwned\x07name[red]x[/red]")
+        assert "\x1b" not in out  # ESC (and thus the OSC sequence) stripped
+        assert "\x07" not in out  # BEL terminator stripped
+        assert "\\[red]" in out  # Rich markup escaped, not interpreted
+
+
+# ── Credential storage hardening ────────────────────────────────────────
+# credentials.json is 0600, but the directory holding it should also be
+# owner-only so other local users can't list it and to blunt symlink/predictable
+# -temp races during token writes.
+
+
+class TestConfigDirPermissions:
+    """ensure_config_dir creates an owner-only (0700) directory on POSIX."""
+
+    @pytest.mark.skipif(os.name == "nt", reason="POSIX permission bits only")
+    def test_config_dir_is_owner_only(self, tmp_path, monkeypatch):
+        """The config directory must be created with 0700 permissions."""
+        import stat
+
+        target = tmp_path / "cfgroot" / "validibot"
+        monkeypatch.setattr(config_module, "get_config_dir", lambda: target)
+
+        created = config_module.ensure_config_dir()
+
+        assert created == target
+        assert created.is_dir()
+        mode = stat.S_IMODE(created.stat().st_mode)
+        assert mode == 0o700, f"expected 0o700, got {oct(mode)}"

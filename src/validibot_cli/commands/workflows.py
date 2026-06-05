@@ -8,12 +8,12 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.markup import escape
 from rich.table import Table
 
 from validibot_cli.auth import get_default_org
 from validibot_cli.client import APIError, AuthenticationError, get_client
 from validibot_cli.config import InvalidConfigurationError, ServerNotConfiguredError
+from validibot_cli.safe_output import safe_markup, strip_control_chars
 
 
 def _resolve_org(org: str | None) -> str:
@@ -51,12 +51,14 @@ MAX_DESCRIPTION_LENGTH = 50
 
 
 def _sanitize(text: str) -> str:
-    """Sanitize user-provided text to prevent Rich markup injection.
+    """Sanitize server-provided text for a Rich markup context.
 
-    Escapes Rich markup tags like [bold], [link], etc. to prevent
-    malicious content from manipulating terminal output.
+    Strips terminal control/escape bytes (ANSI/OSC sequences, carriage returns)
+    AND escapes Rich markup tags like [bold]/[link] — so a malicious server
+    can neither move the cursor / recolor output nor inject Rich markup. See
+    ``validibot_cli.safe_output``.
     """
-    return escape(text)
+    return safe_markup(text)
 
 
 @app.command(name="list")
@@ -96,9 +98,7 @@ def list_workflows(
         client = get_client()
         workflows = client.list_workflows(org=resolved_org)
     except ServerNotConfiguredError:
-        err_console.print(
-            "Error: No server configured.", style="red", markup=False
-        )
+        err_console.print("Error: No server configured.", style="red", markup=False)
         err_console.print(
             "Run 'validibot config set-server <url>' first.",
             style="dim",
@@ -109,12 +109,19 @@ def list_workflows(
         err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
     except AuthenticationError as e:
-        err_console.print(e.message, style="red", markup=False)
+        err_console.print(strip_control_chars(e.message), style="red", markup=False)
         raise typer.Exit(1) from None
     except APIError as e:
-        err_console.print(f"Error: {e.message}", style="red", markup=False)
+        err_console.print(
+            f"Error: {strip_control_chars(e.message)}", style="red", markup=False
+        )
         if e.detail:
-            err_console.print(str(e.detail), style="dim", markup=False, highlight=False)
+            err_console.print(
+                strip_control_chars(str(e.detail)),
+                style="dim",
+                markup=False,
+                highlight=False,
+            )
         raise typer.Exit(1) from None
     except Exception as e:
         err_console.print(f"Error: {e}", style="red", markup=False)
@@ -206,9 +213,7 @@ def show(
         client = get_client()
         workflow = client.get_workflow(workflow_id, org=resolved_org)
     except ServerNotConfiguredError:
-        err_console.print(
-            "Error: No server configured.", style="red", markup=False
-        )
+        err_console.print("Error: No server configured.", style="red", markup=False)
         err_console.print(
             "Run 'validibot config set-server <url>' first.",
             style="dim",
@@ -219,7 +224,7 @@ def show(
         err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
     except AuthenticationError as e:
-        err_console.print(e.message, style="red", markup=False)
+        err_console.print(strip_control_chars(e.message), style="red", markup=False)
         raise typer.Exit(1) from None
     except APIError as e:
         if e.status_code == 404:
@@ -229,10 +234,15 @@ def show(
                 markup=False,
             )
         else:
-            err_console.print(f"Error: {e.message}", style="red", markup=False)
+            err_console.print(
+                f"Error: {strip_control_chars(e.message)}", style="red", markup=False
+            )
             if e.detail:
                 err_console.print(
-                    str(e.detail), style="dim", markup=False, highlight=False
+                    strip_control_chars(str(e.detail)),
+                    style="dim",
+                    markup=False,
+                    highlight=False,
                 )
         raise typer.Exit(1) from None
     except Exception as e:

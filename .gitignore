@@ -74,8 +74,11 @@ dmypy.json
 # ruff
 .ruff_cache/
 
-# uv
-uv.lock
+# uv: the lockfile IS committed — it gives reproducible dev/CI installs and lets
+# CI catch CVEs in the resolved set. (The published wheel still ships >= floors;
+# the lock governs the repo's own environment, not downstream installs.)
+# The exported audit requirements file is a generated CI artifact, not source.
+requirements-audit.txt
 
 # OS
 .DS_Store

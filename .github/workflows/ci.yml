@@ -48,9 +48,29 @@ jobs:
           validibot --version
           validibot --help
 
+  deps:
+    name: deps (lock + audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install uv
+        uses: astral-sh/setup-uv@d4b2f3b6ecc6e67c4457f6d3e41ec42d3d0fcb86 # v5
+      - name: Verify the lockfile is in sync with pyproject.toml
+        # Fails if uv.lock has drifted from pyproject (e.g. a dependency was
+        # changed without re-locking) so the committed lock can't silently rot.
+        run: uv lock --check
+      - name: Audit the locked dependency set for known vulnerabilities
+        # Audits the EXACT resolved versions in uv.lock — not a fresh
+        # floors-resolved set — so a CVE pinned in the lock is caught here even
+        # when a clean install would pull a fixed version.
+        run: |
+          uv export --frozen --no-emit-project \
+            --format requirements-txt -o requirements-audit.txt
+          uvx pip-audit -r requirements-audit.txt
+
   ci:
     name: ci
     runs-on: ubuntu-latest
-    needs: [test]
+    needs: [test, deps]
     steps:
       - run: echo "All checks passed."

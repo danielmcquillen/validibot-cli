@@ -68,11 +68,7 @@ def enforce_https(url: str, *, allow_insecure: bool = False) -> None:
     """
     parsed = urlparse(url)
     host = parsed.hostname or ""
-    if (
-        parsed.scheme != "https"
-        and not allow_insecure
-        and host not in _LOCAL_API_HOSTS
-    ):
+    if parsed.scheme != "https" and not allow_insecure and host not in _LOCAL_API_HOSTS:
         raise ValueError(
             "Refusing to use a non-HTTPS server URL. "
             "Use --allow-insecure (or set VALIDIBOT_ALLOW_INSECURE_API_URL=1) "
@@ -108,9 +104,21 @@ def get_data_dir() -> Path:
 
 
 def ensure_config_dir() -> Path:
-    """Ensure config directory exists and return its path."""
+    """Ensure config directory exists (owner-only) and return its path.
+
+    The directory holds ``credentials.json``. That file is written ``0600``,
+    but ``mkdir``'s mode is subject to the umask, so we ``chmod`` to ``0700``
+    explicitly — a private directory stops other local users from listing it
+    and blunts symlink/predictable-temp races during token writes. Best-effort:
+    on platforms where chmod is meaningless (e.g. Windows) the ``0600`` file
+    permission remains the primary control.
+    """
     config_dir = get_config_dir()
     config_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        config_dir.chmod(0o700)
+    except OSError:
+        pass
     return config_dir
 
 

@@ -10,7 +10,6 @@ from typing import Annotated
 
 import typer
 from rich.console import Console
-from rich.markup import escape
 from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
@@ -31,6 +30,7 @@ from validibot_cli.models import (
     FindingSeverity,
     ValidationRun,
 )
+from validibot_cli.safe_output import safe_markup, strip_control_chars
 
 
 def _resolve_org(org: str | None) -> str:
@@ -173,7 +173,7 @@ def _display_run_result(run: ValidationRun, verbose: bool = False) -> None:
 
     # Build summary content
     lines = [
-        f"[dim]Run ID:[/dim] {escape(str(run_id))}",
+        f"[dim]Run ID:[/dim] {safe_markup(str(run_id))}",
         f"[dim]Status:[/dim] {_format_status(status)}",
     ]
 
@@ -182,13 +182,13 @@ def _display_run_result(run: ValidationRun, verbose: bool = False) -> None:
 
     # Add error info if present (sanitize server-provided content)
     if run.error_category:
-        lines.append(f"[dim]Error category:[/dim] {escape(run.error_category)}")
+        lines.append(f"[dim]Error category:[/dim] {safe_markup(run.error_category)}")
     if run.user_friendly_error:
         lines.append("")
-        lines.append(f"[red]Error:[/red] {escape(run.user_friendly_error)}")
+        lines.append(f"[red]Error:[/red] {safe_markup(run.user_friendly_error)}")
     elif run.error:
         lines.append("")
-        lines.append(f"[red]Error:[/red] {escape(run.error)}")
+        lines.append(f"[red]Error:[/red] {safe_markup(run.error)}")
 
     # Add timing info if available
     if run.duration_ms:
@@ -242,14 +242,14 @@ def _display_run_result(run: ValidationRun, verbose: bool = False) -> None:
                 if step_number > 1:
                     findings_lines.append("")  # Add spacing between steps
                 findings_lines.append(
-                    f"[bold]Step {step_number}: {escape(step_name)}[/bold] - {count_str}"
+                    f"[bold]Step {step_number}: {safe_markup(step_name)}[/bold] - {count_str}"
                 )
 
                 # Add each finding
                 for finding in step_run.issues:
                     severity = _format_severity(finding.severity)
-                    message = escape(finding.message)
-                    path = escape(finding.path) if finding.path else ""
+                    message = safe_markup(finding.message)
+                    path = safe_markup(finding.path) if finding.path else ""
 
                     if path:
                         findings_lines.append(f"  {severity}  {path}  {message}")
@@ -272,7 +272,7 @@ def _display_run_result(run: ValidationRun, verbose: bool = False) -> None:
             step_name = step_run.name or "Step"
             step_status = step_run.status.value
             console.print(
-                f"  • Step {step_number}: {escape(step_name)}: {_format_status(step_status)}"
+                f"  • Step {step_number}: {safe_markup(step_name)}: {_format_status(step_status)}"
             )
 
 
@@ -469,9 +469,7 @@ def run(
     try:
         client = get_client()
     except ServerNotConfiguredError:
-        err_console.print(
-            "Error: No server configured.", style="red", markup=False
-        )
+        err_console.print("Error: No server configured.", style="red", markup=False)
         err_console.print(
             "Run 'validibot config set-server <url>' first.",
             style="dim",
@@ -504,11 +502,13 @@ def run(
             short_description=short_description,
         )
     except AmbiguousWorkflowError as e:
-        err_console.print(f"Error: {e.message}", style="red", markup=False)
+        err_console.print(
+            f"Error: {strip_control_chars(e.message)}", style="red", markup=False
+        )
         if e.matches:
             err_console.print("\nMatching workflows:", style="dim")
             for match in e.matches:
-                match_version = match.get("version", "?")
+                match_version = strip_control_chars(str(match.get("version", "?")))
                 err_console.print(
                     f"  • version={match_version}",
                     markup=False,
@@ -519,16 +519,21 @@ def run(
             )
         raise typer.Exit(1) from None
     except AuthenticationError as e:
-        err_console.print(e.message, style="red", markup=False)
+        err_console.print(strip_control_chars(e.message), style="red", markup=False)
         raise typer.Exit(1) from None
     except APIError as e:
         err_console.print(
-            f"Error starting validation: {e.message}",
+            f"Error starting validation: {strip_control_chars(e.message)}",
             style="red",
             markup=False,
         )
         if e.detail:
-            err_console.print(str(e.detail), style="dim", markup=False, highlight=False)
+            err_console.print(
+                strip_control_chars(str(e.detail)),
+                style="dim",
+                markup=False,
+                highlight=False,
+            )
         raise typer.Exit(1) from None
 
     run_id = run_data.id
@@ -574,7 +579,9 @@ def run(
         raise typer.Exit(130) from None
     except APIError as e:
         err_console.print(
-            f"Error checking status: {e.message}", style="red", markup=False
+            f"Error checking status: {strip_control_chars(e.message)}",
+            style="red",
+            markup=False,
         )
         raise typer.Exit(1) from None
 

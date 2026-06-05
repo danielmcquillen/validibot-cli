@@ -11,6 +11,7 @@ from validibot_cli.auth import get_default_org
 from validibot_cli.client import APIError, AuthenticationError, get_client
 from validibot_cli.commands.validate import _display_run_result
 from validibot_cli.config import InvalidConfigurationError, ServerNotConfiguredError
+from validibot_cli.safe_output import strip_control_chars
 
 
 def _resolve_org(org: str | None) -> str:
@@ -86,9 +87,7 @@ def show(
         client = get_client()
         run_data = client.get_validation_run(run_id, org=resolved_org)
     except ServerNotConfiguredError:
-        err_console.print(
-            "Error: No server configured.", style="red", markup=False
-        )
+        err_console.print("Error: No server configured.", style="red", markup=False)
         err_console.print(
             "Run 'validibot config set-server <url>' first.",
             style="dim",
@@ -99,16 +98,21 @@ def show(
         err_console.print(f"Error: {e}", style="red", markup=False)
         raise typer.Exit(1) from None
     except AuthenticationError as e:
-        err_console.print(e.message, style="red", markup=False)
+        err_console.print(strip_control_chars(e.message), style="red", markup=False)
         raise typer.Exit(1) from None
     except APIError as e:
         if e.status_code == 404:
             err_console.print(f"Run not found: {run_id}", style="red", markup=False)
         else:
-            err_console.print(f"Error: {e.message}", style="red", markup=False)
+            err_console.print(
+                f"Error: {strip_control_chars(e.message)}", style="red", markup=False
+            )
             if e.detail:
                 err_console.print(
-                    str(e.detail), style="dim", markup=False, highlight=False
+                    strip_control_chars(str(e.detail)),
+                    style="dim",
+                    markup=False,
+                    highlight=False,
                 )
         raise typer.Exit(1) from None
     except Exception as e:

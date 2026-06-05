@@ -245,7 +245,7 @@ class ValidibotClient:
         **kwargs: Any,
     ) -> Any:
         """Make a POST request."""
-        url = f"{self.api_url}{path}"
+        url = self._resolve_url(path)
         headers = self._get_headers()
 
         # Don't set Content-Type for multipart (httpx handles it)
@@ -275,7 +275,7 @@ class ValidibotClient:
         extra_data: dict[str, str] | None = None,
     ) -> Any:
         """Upload a file via multipart form."""
-        url = f"{self.api_url}{path}"
+        url = self._resolve_url(path)
         headers = self._get_headers()
         # Remove Content-Type - httpx will set multipart boundary
         headers.pop("Content-Type", None)

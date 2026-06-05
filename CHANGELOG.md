@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2026-06-06
+
+### Security
+
+- Strip terminal control/escape bytes (ANSI/OSC sequences, carriage returns)
+  from all server-controlled strings before display. Rich's `escape()` /
+  `markup=False` only neutralize Rich's own `[tag]` markup, not raw terminal
+  control sequences, so a malicious or compromised server could previously
+  recolor output to spoof a result, move the cursor, rewrite the window title,
+  or overwrite a line. Added `validibot_cli.safe_output` and applied it to
+  error details, finding messages, and workflow names/versions across the
+  `validate`, `runs`, and `workflows` commands.
+- Create the config directory (`~/.config/validibot`, which holds
+  `credentials.json`) with `0700` permissions, and open the token temp-file
+  with `O_NOFOLLOW`, hardening the credential store against other local users
+  and symlink/predictable-temp races.
+- Route `post`/`upload_file` requests through the same host-pinning guard
+  (`_resolve_url`) as `get`, so a request target can never be sent to a
+  different host than the configured API.
+
+### Changed
+
+- Refreshed `uv.lock` to pull patched transitive dependencies (idna 3.18,
+  python-dotenv 1.2.2, jaraco-context 6.1.2, pygments 2.20.0, certifi
+  2026.5.20), clearing several advisories that were pinned in the old lock.
+- The lockfile is now committed, and CI verifies it stays in sync with
+  `pyproject.toml` and audits the locked dependency set for known
+  vulnerabilities (so a CVE pinned in the lock is caught even when a clean
+  install would resolve to a fixed version).
+
 ## [0.3.0] - 2026-06-06
 
 ### Added
