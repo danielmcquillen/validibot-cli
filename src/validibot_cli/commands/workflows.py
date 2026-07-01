@@ -278,4 +278,16 @@ def show(
             step_name = step.name or step.validator_type or "Unknown"
             console.print(f"  {i}. {_sanitize(step_name)}")
 
+    # Show constants (the c.* namespace) with their values — the fixed
+    # thresholds this workflow judges submissions against (ADR-2026-06-18).
+    if workflow.constants:
+        console.print()
+        console.print("[dim]Constants:[/dim]")
+        for const in workflow.constants:
+            value_str = _sanitize(str(const.value))
+            type_str = (
+                f" [dim]({const.data_type.lower()})[/dim]" if const.data_type else ""
+            )
+            console.print(f"  c.{_sanitize(const.name)} = {value_str}{type_str}")
+
     console.print()

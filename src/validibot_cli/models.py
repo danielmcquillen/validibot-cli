@@ -107,6 +107,21 @@ class WorkflowStep(BaseModel):
     order: int = 0
 
 
+class WorkflowConstant(BaseModel):
+    """A named, fixed value defined at the workflow level (the c.* namespace).
+
+    Constants (ADR-2026-06-18) are workflow-defined literals referenced in
+    assertions as ``c.<name>``. Surfaced here so the CLI can show the fixed
+    thresholds a workflow judges against, for parity with the web UI and the
+    signed credential.
+    """
+
+    name: str
+    data_type: str = ""
+    value: object = None
+    description: str = ""
+
+
 class Workflow(BaseModel):
     """A validation workflow."""
 
@@ -118,6 +133,7 @@ class Workflow(BaseModel):
     org_slug: str = ""  # Organization slug (ADR-2026-01-06)
     is_active: bool = True
     steps: list[WorkflowStep] = Field(default_factory=list)
+    constants: list[WorkflowConstant] = Field(default_factory=list)
     created_at: datetime | None = None
     updated_at: datetime | None = None
 

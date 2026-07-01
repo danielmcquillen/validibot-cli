@@ -225,6 +225,13 @@ validibot validate model.idf -w <workflow> --timeout 300
 
 # Name your validation run
 validibot validate model.idf -w <workflow> --name "nightly-build-check"
+
+# Attach submission metadata for rules to read (repeatable)
+# Readable in workflow rules as submission.metadata.<key>
+validibot validate model.idf -w <workflow> --meta deliverable=handover --meta phase=dd
+
+# Add a short description, readable in rules as submission.short_description
+validibot validate model.idf -w <workflow> --short-description "Stage 4 handover model"
 ```
 
 #### Option Reference
@@ -236,6 +243,8 @@ validibot validate model.idf -w <workflow> --name "nightly-build-check"
 | `--project` | `-p` | Project slug for filtering |
 | `--version` | | Workflow version |
 | `--name` | `-n` | Name for this validation run |
+| `--meta` | | Submission metadata as `key=value` (repeatable); readable in rules as `submission.metadata.<key>` |
+| `--short-description` | | Short description for this run; readable in rules as `submission.short_description` |
 | `--wait/--no-wait` | | Wait for completion (default: wait) |
 | `--timeout` | `-t` | Max wait time in seconds (default: 600) |
 | `--verbose` | `-v` | Show detailed step-by-step output |
